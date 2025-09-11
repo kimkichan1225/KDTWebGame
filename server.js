@@ -41,6 +41,44 @@ function broadcastBotState(roomId, bot) {
   });
 }
 
+function randomSpawn() {
+  return {
+    x: (Math.random() * 78) - 39,
+    y: 0,
+    z: (Math.random() * 78) - 39
+  };
+}
+
+function scheduleBotRespawn(roomId, bot, delayMs = 3000) {
+  if (!rooms[roomId] || !bot || !bot.isBot) return;
+  if (!bot.runtime) bot.runtime = { x: 0, y: 0, z: 0, rotY: 0 };
+  if (bot.runtime.respawning) return;
+  bot.runtime.respawning = true;
+  bot.runtime.respawnTO = setTimeout(() => {
+    if (!rooms[roomId]) return;
+    const pos = randomSpawn();
+    bot.hp = 100;
+    bot.runtime.x = pos.x;
+    bot.runtime.y = pos.y;
+    bot.runtime.z = pos.z;
+    bot.runtime.rotY = 0;
+    bot.isAttacking = false;
+    // notify clients: hp restored and position set
+    io.to(roomId).emit('hpUpdate', { playerId: bot.id, hp: bot.hp, attackerId: bot.id });
+    io.to(roomId).emit('gameUpdate', {
+      playerId: bot.id,
+      position: [bot.runtime.x, bot.runtime.y, bot.runtime.z],
+      rotation: [0, bot.runtime.rotY, 0],
+      animation: 'Idle',
+      hp: bot.hp,
+      equippedWeapon: bot.equippedWeapon,
+      isAttacking: false
+    });
+    bot.runtime.respawning = false;
+    bot.runtime.respawnTO = null;
+  }, delayMs);
+}
+
 // Helper function to update all players in a room
 function updateRoomPlayers(roomId) {
   if (rooms[roomId]) {
@@ -286,6 +324,7 @@ io.on('connection', (socket) => {
                         victim.deaths++;
                         io.to(socket.roomId).emit('updateScores', room.players.map(p => ({ id: p.id, nickname: p.nickname, kills: p.kills, deaths: p.deaths })));
                         io.to(socket.roomId).emit('killFeed', { attackerName: bot.nickname, victimName: victim.nickname, attackerCharacter: bot.character, victimCharacter: victim.character });
+                        if (victim.isBot) scheduleBotRespawn(socket.roomId, victim, 3000);
                       }
                     }
                   }
@@ -465,6 +504,19 @@ io.on('connection', (socket) => {
 
         if (targetPlayer.hp === 0) {
           console.log(`${targetPlayer.nickname} (${targetPlayer.id}) has been defeated!`);
+          // If a bot died, handle killfeed/score and schedule respawn here (clients don't emit playerKilled for bots)
+          if (targetPlayer.isBot) {
+            const attacker = room.players.find(p => p.id === data.attackerId);
+            targetPlayer.deaths++;
+            if (attacker && attacker.id !== targetPlayer.id) {
+              attacker.kills++;
+            }
+            io.to(socket.roomId).emit('updateScores', room.players.map(p => ({ id: p.id, nickname: p.nickname, kills: p.kills, deaths: p.deaths })));
+            const attackerName = attacker ? attacker.nickname : 'World';
+            const attackerCharacter = attacker ? attacker.character : 'Default';
+            io.to(socket.roomId).emit('killFeed', { attackerName, victimName: targetPlayer.nickname, attackerCharacter, victimCharacter: targetPlayer.character });
+            scheduleBotRespawn(socket.roomId, targetPlayer, 3000);
+          }
         }
       } else {
         console.log(`[Server] Target player ${data.targetId} not found in room ${socket.roomId}`);
