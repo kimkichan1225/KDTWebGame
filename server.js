@@ -84,7 +84,7 @@ io.on('connection', (socket) => {
 
     rooms[roomId] = {
       id: roomId,
-      players: [{ id: socket.id, ready: false, nickname: nickname, character: character, equippedWeapon: null, isAttacking: false, hp: 100, kills: 0, deaths: 0 }],
+      players: [{ id: socket.id, ready: false, nickname: nickname, character: character, equippedWeapon: null, isAttacking: false, hp: 100, kills: 0, deaths: 0, runtime: { x: 0, y: 0, z: 0, rotY: 0 } }],
       gameState: { timer: roundTime, gameStarted: false },
       map: map,
       maxPlayers: maxPlayers,
@@ -119,7 +119,7 @@ io.on('connection', (socket) => {
         return;
       }
       socket.join(roomId);
-      rooms[roomId].players.push({ id: socket.id, ready: false, nickname: nickname, character: character, equippedWeapon: null, isAttacking: false, hp: 100, kills: 0, deaths: 0 });
+      rooms[roomId].players.push({ id: socket.id, ready: false, nickname: nickname, character: character, equippedWeapon: null, isAttacking: false, hp: 100, kills: 0, deaths: 0, runtime: { x: 0, y: 0, z: 0, rotY: 0 } });
       socket.roomId = roomId;
       console.log(`${socket.id} joined room: ${roomId}`);
       socket.emit('roomJoined', { id: roomId, name: rooms[roomId].name, map: rooms[roomId].map });
@@ -154,6 +154,15 @@ io.on('connection', (socket) => {
         playerInRoom.equippedWeapon = data.equippedWeapon;
         playerInRoom.isAttacking = data.isAttacking;
         playerInRoom.hp = data.hp;
+        if (!playerInRoom.runtime) playerInRoom.runtime = { x: 0, y: 0, z: 0, rotY: 0 };
+        if (Array.isArray(data.position)) {
+          playerInRoom.runtime.x = data.position[0];
+          playerInRoom.runtime.y = data.position[1];
+          playerInRoom.runtime.z = data.position[2];
+        }
+        if (Array.isArray(data.rotation)) {
+          playerInRoom.runtime.rotY = data.rotation[1] || 0;
+        }
       }
       socket.to(socket.roomId).emit('gameUpdate', data);
     }
@@ -195,7 +204,7 @@ io.on('connection', (socket) => {
                 // choose or refresh target every 1.5s
                 bot.runtime.tick++;
                 if (!bot.runtime.targetId || bot.runtime.tick % 15 === 0) { // 15 ticks * 100ms = 1.5s
-                  const candidates = (humanPlayers.length ? humanPlayers : room.players.filter(p=>p.id!==bot.id)).filter(p=>p.hp>0);
+                  const candidates = room.players.filter(p => p.id !== bot.id && p.hp > 0);
                   if (candidates.length) {
                     // pick nearest
                     let best = candidates[0];
@@ -259,9 +268,10 @@ io.on('connection', (socket) => {
                   isAttacking: bot.isAttacking
                 });
 
-                // attack if near target
+                // attack if near target with simple cooldown
+                if (bot.runtime.attackCd && bot.runtime.attackCd > 0) bot.runtime.attackCd -= 0.1; // 100ms
                 const dist = target && target.runtime ? Math.hypot(target.runtime.x-bot.runtime.x, target.runtime.z-bot.runtime.z) : 999;
-                if (dist < 2.0 && Math.random() < 0.2) {
+                if (dist < 2.0 && (!bot.runtime.attackCd || bot.runtime.attackCd <= 0)) {
                   bot.isAttacking = true;
                   io.to(socket.roomId).emit('playerAttack', { playerId: bot.id, animationName: 'SwordSlash' });
                   const victimId = target ? target.id : null;
@@ -280,6 +290,7 @@ io.on('connection', (socket) => {
                     }
                   }
                   setTimeout(()=>{ bot.isAttacking = false; }, 400);
+                  bot.runtime.attackCd = 0.9; // ~0.9s cooldown
                 }
               }
             }, 100);
