@@ -344,7 +344,7 @@ export const player = (() => {
           this.currentAction_.setLoop(THREE.LoopOnce);
           this.currentAction_.clampWhenFinished = true;
         } else {
-          console.warn(`Animation "${name}" not found for character. Falling back to Idle.`);
+          
           this.currentAction_ = this.animations_['Idle']; // Fallback to Idle
           if (this.currentAction_) {
             this.currentAction_.reset().fadeIn(0.3).play();
@@ -382,7 +382,8 @@ export const player = (() => {
           this.currentAction_.timeScale = 1.0;
         }
       } else {
-        console.warn(`Animation "${name}" not found for character. Falling back to Idle.`);
+        
+        
         this.currentAction_ = this.animations_['Idle']; // Fallback to Idle
         if (this.currentAction_) {
           this.currentAction_.reset().fadeIn(0.3).play();
@@ -555,9 +556,9 @@ export const player = (() => {
                 angle: weapon.angle,
                 radius: weapon.radius,
                 onHit: (target) => {
-                  console.log(`${attacker.nickname_} hit ${target.nickname_ || 'NPC'} with ${weapon.name}!`);
+                  
                   if (this.socket_ && target.params_.isRemote) { // 원격 플레이어에게만 데미지 이벤트 전송
-                    console.log(`[Player] Emitting playerDamage: targetId=${target.params_.playerId}, damage=${weapon.damage}, attackerId=${this.socket_.id}`);
+                    
                     this.socket_.emit('playerDamage', { targetId: target.params_.playerId, damage: weapon.damage, attackerId: this.socket_.id });
                   }
                 }
@@ -572,9 +573,9 @@ export const player = (() => {
                 radius: weapon.projectileSize,
                 speed: weapon.projectileSpeed,
                 onHit: (target) => {
-                  console.log(`${attacker.nickname_} hit ${target.nickname_ || 'NPC'} with ${weapon.name}!`);
+                  
                   if (this.socket_ && target.params_.isRemote) { // 원격 플레이어에게만 데미지 이벤트 전송
-                    console.log(`[Player] Emitting playerDamage: targetId=${target.params_.playerId}, damage=${weapon.damage}, attackerId=${this.socket_.id}`);
+                    
                     this.socket_.emit('playerDamage', { targetId: target.params_.playerId, damage: weapon.damage, attackerId: this.socket_.id });
                   }
                 }
@@ -621,18 +622,18 @@ export const player = (() => {
 
     EquipWeapon(weaponName) {
       if (!this.rightHandBone) {
-        console.warn("FistR bone not found. Cannot equip weapon.");
+        
         return;
       }
 
       if (this.currentWeaponModel && this.currentWeaponModel.userData.weaponName === weaponName) {
-        console.log(`Weapon ${weaponName} is already equipped. Skipping re-equip.`);
+        
         return;
       }
 
       const weaponData = WEAPON_DATA[weaponName];
       if (!weaponData) {
-        console.error(`Weapon data not found for ${weaponName}`);
+        
         return;
       }
       this.equippedWeaponData_ = weaponData;
@@ -670,9 +671,9 @@ export const player = (() => {
         this.rightHandBone.add(weaponModel);
         this.currentWeaponModel = weaponModel;
         this.currentWeaponModel.userData.weaponName = weaponName; // 무기 이름 저장
-        console.log(`Player equipped weapon: ${weaponName}`);
+        
       }, undefined, (error) => {
-        console.error(`Error loading weapon model ${weaponName}:`, error);
+        
       });
     }
 

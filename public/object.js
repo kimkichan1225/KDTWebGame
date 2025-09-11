@@ -24,7 +24,7 @@ export const object = (() => {
       if (this.hp_ === 0) {
         this.isDead_ = true; // 죽음 상태로 설정
         // TODO: NPC 사망 애니메이션 또는 제거 로직 추가
-        console.log("NPC died!");
+        
         // 예: this.scene_.remove(this.model_);
       }
     }

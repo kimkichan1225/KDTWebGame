@@ -102,7 +102,7 @@ app.get('/', (req, res) => {
 });
 
 io.on('connection', (socket) => {
-  console.log('A user connected:', socket.id);
+  
 
   socket.on('getPublicRooms', () => {
     const publicRooms = Object.values(rooms).filter(room => room.visibility === 'public').map(room => ({
@@ -133,7 +133,7 @@ io.on('connection', (socket) => {
     };
     socket.join(roomId);
     socket.roomId = roomId;
-    console.log(`Room created: ${roomId} by ${socket.id} with settings:`, roomSettings);
+    
     socket.emit('roomCreated', { id: roomId, name: rooms[roomId].name, map: rooms[roomId].map });
     updateRoomPlayers(roomId);
   });
@@ -159,7 +159,7 @@ io.on('connection', (socket) => {
       socket.join(roomId);
       rooms[roomId].players.push({ id: socket.id, ready: false, nickname: nickname, character: character, equippedWeapon: null, isAttacking: false, hp: 100, kills: 0, deaths: 0, runtime: { x: 0, y: 0, z: 0, rotY: 0 } });
       socket.roomId = roomId;
-      console.log(`${socket.id} joined room: ${roomId}`);
+      
       socket.emit('roomJoined', { id: roomId, name: rooms[roomId].name, map: rooms[roomId].map });
       updateRoomPlayers(roomId);
     } else {
@@ -232,8 +232,13 @@ io.on('connection', (socket) => {
 
           io.to(socket.roomId).emit('startGame', { players: room.players, map: room.map, spawnedWeapons: spawnedWeapons });
 
-          // Start simple bot simulation loop per room
-          if (!room.gameState.botInterval) {
+          // Start bot simulation after 3s (client countdown)
+          if (room.gameState.botIntervalStartTO) {
+            clearTimeout(room.gameState.botIntervalStartTO);
+            room.gameState.botIntervalStartTO = null;
+          }
+          room.gameState.botIntervalStartTO = setTimeout(() => {
+            if (room.gameState.botInterval) return;
             room.gameState.botInterval = setInterval(() => {
               const bots = room.players.filter(p => p.isBot);
               const humanPlayers = room.players.filter(p => !p.isBot);
@@ -317,13 +322,19 @@ io.on('connection', (socket) => {
                     const damage = 15;
                     const victim = room.players.find(p=>p.id===victimId);
                     if (victim) {
+                      if (victim.id !== bot.id) {
+                        victim.lastHitBy = bot.id;
+                      }
                       victim.hp = Math.max(0, victim.hp - damage);
                       io.to(socket.roomId).emit('hpUpdate', { playerId: victim.id, hp: victim.hp, attackerId: bot.id });
                       if (victim.hp === 0) {
-                        if (victim.id !== bot.id) bot.kills++;
+                        // 최종 킬은 lastHitBy 기준으로 계산
+                        const killerId = victim.lastHitBy || bot.id;
+                        const killer = room.players.find(p => p.id === killerId);
+                        if (killer && killer.id !== victim.id) killer.kills++;
                         victim.deaths++;
                         io.to(socket.roomId).emit('updateScores', room.players.map(p => ({ id: p.id, nickname: p.nickname, kills: p.kills, deaths: p.deaths })));
-                        io.to(socket.roomId).emit('killFeed', { attackerName: bot.nickname, victimName: victim.nickname, attackerCharacter: bot.character, victimCharacter: victim.character });
+                        io.to(socket.roomId).emit('killFeed', { attackerName: (killer ? killer.nickname : 'World'), victimName: victim.nickname, attackerCharacter: (killer ? killer.character : 'Default'), victimCharacter: victim.character });
                         if (victim.isBot) scheduleBotRespawn(socket.roomId, victim, 3000);
                       }
                     }
@@ -333,7 +344,7 @@ io.on('connection', (socket) => {
                 }
               }
             }, 100);
-          }
+          }, 3000);
 
           // Start game timer
           const gameTimer = setInterval(() => {
@@ -346,6 +357,10 @@ io.on('connection', (socket) => {
               if (room.gameState.botInterval) {
                 clearInterval(room.gameState.botInterval);
                 room.gameState.botInterval = null;
+              }
+              if (room.gameState.botIntervalStartTO) {
+                clearTimeout(room.gameState.botIntervalStartTO);
+                room.gameState.botIntervalStartTO = null;
               }
             }
           }, 1000);
@@ -433,7 +448,7 @@ io.on('connection', (socket) => {
     if (!roomId || !rooms[roomId]) return;
     const room = rooms[roomId];
     const roomCreator = room.players[0];
-    console.log(`[AddBot] request from ${socket.id} in room ${roomId}`);
+    
     if (room.status === 'playing') {
       socket.emit('roomError', '게임이 시작된 후에는 AI를 추가할 수 없습니다.');
       return;
@@ -448,7 +463,7 @@ io.on('connection', (socket) => {
     }
     const bot = makeRandomBot(roomId);
     room.players.push(bot);
-    console.log(`[AddBot] added bot ${bot.nickname} (${bot.id}) to room ${roomId}`);
+    
     updateRoomPlayers(roomId);
   });
 
@@ -489,24 +504,29 @@ io.on('connection', (socket) => {
   });
 
   socket.on('playerDamage', (data) => {
-    console.log(`[Server] Received playerDamage: targetId=${data.targetId}, damage=${data.damage}, attackerId=${data.attackerId}`);
+    
     if (socket.roomId && rooms[socket.roomId]) {
       const room = rooms[socket.roomId];
       const targetPlayer = room.players.find(p => p.id === data.targetId);
       if (targetPlayer) {
-        console.log(`[Server] Target player found: ${targetPlayer.nickname} (HP: ${targetPlayer.hp})`);
+        
+        // 기록: 마지막 가해자 (자살/자해는 제외)
+        if (data.attackerId && data.attackerId !== targetPlayer.id) {
+          targetPlayer.lastHitBy = data.attackerId;
+        }
         targetPlayer.hp -= data.damage;
         if (targetPlayer.hp < 0) targetPlayer.hp = 0;
-        console.log(`[Server] ${targetPlayer.nickname} new HP: ${targetPlayer.hp}`);
+        
 
         io.to(socket.roomId).emit('hpUpdate', { playerId: targetPlayer.id, hp: targetPlayer.hp, attackerId: data.attackerId });
-        console.log(`[Server] Emitted hpUpdate: playerId=${targetPlayer.id}, hp=${targetPlayer.hp}, attackerId=${data.attackerId}`);
+        
 
         if (targetPlayer.hp === 0) {
-          console.log(`${targetPlayer.nickname} (${targetPlayer.id}) has been defeated!`);
+          
           // If a bot died, handle killfeed/score and schedule respawn here (clients don't emit playerKilled for bots)
           if (targetPlayer.isBot) {
-            const attacker = room.players.find(p => p.id === data.attackerId);
+            const killerId = targetPlayer.lastHitBy || data.attackerId;
+            const attacker = room.players.find(p => p.id === killerId);
             targetPlayer.deaths++;
             if (attacker && attacker.id !== targetPlayer.id) {
               attacker.kills++;
@@ -519,20 +539,20 @@ io.on('connection', (socket) => {
           }
         }
       } else {
-        console.log(`[Server] Target player ${data.targetId} not found in room ${socket.roomId}`);
+        
       }
     }
   });
 
   socket.on('disconnect', () => {
-    console.log('User disconnected:', socket.id);
+    
     if (socket.roomId && rooms[socket.roomId]) {
       rooms[socket.roomId].players = rooms[socket.roomId].players.filter(
         (p) => p.id !== socket.id
       );
       if (rooms[socket.roomId].players.length === 0) {
         delete rooms[socket.roomId];
-        console.log(`Room ${socket.roomId} deleted.`);
+        
       } else {
         updateRoomPlayers(socket.roomId);
       }
@@ -541,5 +561,5 @@ io.on('connection', (socket) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  
 });

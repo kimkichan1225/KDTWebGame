@@ -9,9 +9,9 @@ export async function loadWeaponData() {
     try {
         const response = await fetch('./resources/data/weapon_data.json');
         WEAPON_DATA = await response.json();
-        console.log('Weapon data loaded:', WEAPON_DATA);
+        
     } catch (error) {
-        console.error('Failed to load weapon data:', error);
+        
     }
 }
 
@@ -59,9 +59,9 @@ export class Weapon {
 
             this.scene_.add(model);
             this.model_ = model;
-            console.log(`Weapon model ${weaponName} loaded at`, position);
+            
         }, undefined, (error) => {
-            console.error(`Error loading weapon model ${weaponName}:`, error);
+            
         });
     }
 }
@@ -70,7 +70,7 @@ export class Weapon {
 export function getRandomWeaponName() {
     const weaponNames = Object.keys(WEAPON_DATA).filter(name => name !== 'Potion1_Filled.fbx');
     if (weaponNames.length === 0) {
-        console.warn("No weapons available to spawn (excluding Potion1_Filled.fbx).");
+        
         return null;
     }
     const randomIndex = Math.floor(Math.random() * weaponNames.length);

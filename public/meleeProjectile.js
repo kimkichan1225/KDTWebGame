@@ -12,7 +12,7 @@ export class MeleeProjectile {
     this.range = weapon.reach || 20.0;
     this.traveled = 0;
     this.radius = (weapon.projectileSize !== undefined) ? weapon.projectileSize : (radius || weapon.radius || 0.3);
-    console.log(`MeleeProjectile created with radius: ${this.radius}, weapon.radius: ${weapon.radius}`);
+    
     this.angle = angle || weapon.angle || Math.PI / 2;
     this.type = type;
     this.isDestroyed = false;
@@ -56,7 +56,7 @@ export class MeleeProjectile {
     toTarget.y = 0;
     const dist = toTarget.length();
     if (dist > this.radius) {
-      console.log(`isInSector: dist (${dist}) > this.radius (${this.radius})`);
+      
       return false;
     }
 

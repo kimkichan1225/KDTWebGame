@@ -195,7 +195,7 @@ export class GameStage1 {
     }
 
     // 최대 시도 횟수를 초과하면 기본 위치 반환 (최후의 수단)
-    console.warn("Failed to find a non-colliding spawn position after multiple attempts.");
+    
     return new THREE.Vector3(0, 0.5, 0);
   }
 
@@ -298,12 +298,12 @@ export class GameStage1 {
     });
 
     this.socket.on('playerJoined', (playerId) => {
-      console.log(`Player ${playerId} joined the room.`);
+      
       // Optionally, request initial state from the new player
     });
 
     this.socket.on('playerLeft', (playerId) => {
-      console.log(`Player ${playerId} left the room.`);
+      
       const otherPlayer = this.players[playerId];
       if (otherPlayer) {
         this.scene.remove(otherPlayer.mesh_);
@@ -316,14 +316,14 @@ export class GameStage1 {
       if (pickedUpWeapon) {
         this.scene.remove(pickedUpWeapon.model_);
         this.spawnedWeaponObjects = this.spawnedWeaponObjects.filter(w => w.uuid !== weaponUuid);
-        console.log(`Weapon ${weaponUuid} removed from scene.`);
+        
       }
     });
 
     this.socket.on('weaponSpawned', (weaponData) => {
       const weapon = spawnWeaponOnMap(this.scene, weaponData.weaponName, weaponData.x, weaponData.y, weaponData.z, weaponData.uuid);
       this.spawnedWeaponObjects.push(weapon);
-      console.log(`Weapon ${weaponData.uuid} spawned on scene.`);
+      
     });
 
     this.socket.on('playerAttack', (data) => {
@@ -335,13 +335,13 @@ export class GameStage1 {
     });
 
     this.socket.on('hpUpdate', (data) => {
-      console.log(`[Main] Received hpUpdate: playerId=${data.playerId}, hp=${data.hp}`);
+      
       const targetPlayer = (data.playerId === this.localPlayerId) ? this.player_ : this.players[data.playerId];
       if (targetPlayer) {
         const oldHp = targetPlayer.hp_;
         targetPlayer.hp_ = data.hp; // 서버에서 받은 HP로 직접 설정
         targetPlayer.hpUI.updateHP(data.hp); // UI 업데이트
-        console.log(`[Main] ${targetPlayer.nickname_}'s HP updated to: ${targetPlayer.hp_}`);
+        
 
         if (data.hp <= 0 && !targetPlayer.isDead_) {
           targetPlayer.isDead_ = true;
@@ -760,7 +760,7 @@ startGameButton.addEventListener('click', () => {
 
 // Add AI bot to current room
 addAIBotButton.addEventListener('click', () => {
-  console.log('[Client] AI 생성 버튼 클릭');
+  
   addAIBotButton.disabled = true;
   addAIBotButton.textContent = 'AI 추가 중...';
   socket.emit('addBot');
@@ -797,7 +797,7 @@ socket.on('roomJoined', (roomInfo) => {
 });
 
 socket.on('updatePlayers', (players, maxPlayers) => {
-  console.log('[Client] updatePlayers 받음', players);
+  
   updatePlayers(players, maxPlayers);
   if (isRoomCreator) {
     const allReady = players.every(p => p.ready);
@@ -910,11 +910,24 @@ socket.on('gameEnd', (finalScores) => {
 });
 
 socket.on('roomError', (message) => {
-  alert(`방 오류: ${message}`);
-  console.warn('[Client] roomError:', message);
-  menu.style.display = 'flex'; // Show menu again on error
-  waitingRoom.style.display = 'none';
-  joinRoomPopup.style.display = 'none';
+  // show toast only, keep current screen
+  const toast = document.createElement('div');
+  toast.textContent = `방 오류: ${message}`;
+  toast.style.position = 'fixed';
+  toast.style.top = '20px';
+  toast.style.left = '50%';
+  toast.style.transform = 'translateX(-50%)';
+  toast.style.background = 'rgba(0,0,0,0.8)';
+  toast.style.color = '#fff';
+  toast.style.padding = '10px 16px';
+  toast.style.borderRadius = '8px';
+  toast.style.zIndex = '1000';
+  toast.style.fontSize = '16px';
+  document.body.appendChild(toast);
+  setTimeout(() => {
+    if (toast && toast.parentNode) toast.parentNode.removeChild(toast);
+  }, 2500);
+
   if (addAIBotButton) {
     addAIBotButton.disabled = false;
     addAIBotButton.textContent = 'AI 생성';
