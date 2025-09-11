@@ -519,6 +519,7 @@ const waitingRoom = document.getElementById('waitingRoom');
 const waitingRoomIdDisplay = document.getElementById('waitingRoomIdDisplay');
 const playerList = document.getElementById('playerList');
 const readyButton = document.getElementById('readyButton');
+const addAIBotButton = document.getElementById('addAIBotButton');
 const startGameButton = document.getElementById('startGameButton');
 
 // const maxPlayersInput = document.getElementById('maxPlayersInput'); // This input is now part of the create room popup
@@ -757,6 +758,19 @@ startGameButton.addEventListener('click', () => {
   }
 });
 
+// Add AI bot to current room
+addAIBotButton.addEventListener('click', () => {
+  console.log('[Client] AI 생성 버튼 클릭');
+  addAIBotButton.disabled = true;
+  addAIBotButton.textContent = 'AI 추가 중...';
+  socket.emit('addBot');
+  // 3초 타임아웃으로 복구
+  setTimeout(() => {
+    addAIBotButton.disabled = false;
+    addAIBotButton.textContent = 'AI 생성';
+  }, 3000);
+});
+
 socket.on('roomCreated', (roomInfo) => {
   waitingRoomIdDisplay.textContent = `ID: ${roomInfo.id}`;
   waitingRoomTitle.textContent = `${roomInfo.name} (ID: ${roomInfo.id})`;
@@ -767,6 +781,7 @@ socket.on('roomCreated', (roomInfo) => {
   mapPlaceholderText.style.display = 'none';
   isRoomCreator = true; // Set to true for the room creator
   startGameButton.style.display = 'block'; // Show start game button
+  if (addAIBotButton) addAIBotButton.style.display = 'inline-block';
 });
 
 socket.on('roomJoined', (roomInfo) => {
@@ -777,13 +792,20 @@ socket.on('roomJoined', (roomInfo) => {
   currentMapImage.src = `./resources/${capitalizedMapName}.png`;
   currentMapImage.style.display = 'block';
   mapPlaceholderText.style.display = 'none';
+  isRoomCreator = false;
+  if (addAIBotButton) addAIBotButton.style.display = 'none';
 });
 
 socket.on('updatePlayers', (players, maxPlayers) => {
+  console.log('[Client] updatePlayers 받음', players);
   updatePlayers(players, maxPlayers);
   if (isRoomCreator) {
     const allReady = players.every(p => p.ready);
     startGameButton.disabled = !allReady;
+  }
+  if (addAIBotButton) {
+    addAIBotButton.disabled = false;
+    addAIBotButton.textContent = 'AI 생성';
   }
 });
 
@@ -889,7 +911,12 @@ socket.on('gameEnd', (finalScores) => {
 
 socket.on('roomError', (message) => {
   alert(`방 오류: ${message}`);
+  console.warn('[Client] roomError:', message);
   menu.style.display = 'flex'; // Show menu again on error
   waitingRoom.style.display = 'none';
   joinRoomPopup.style.display = 'none';
+  if (addAIBotButton) {
+    addAIBotButton.disabled = false;
+    addAIBotButton.textContent = 'AI 생성';
+  }
 });
