@@ -841,11 +841,11 @@ socket.on('killFeed', (data) => {
     killMessage.style.marginBottom = '5px';
 
     killMessage.innerHTML = `
-        <img src="./resources/character/${data.attackerCharacter}.png" alt="${data.attackerName}" style="width: 20px; height: 20px; margin-right: 5px; border-radius: 50%;">
-        <span>${data.attackerName}</span>
-        <span style="margin: 0 5px;">killed</span>
-        <img src="./resources/character/${data.victimCharacter}.png" alt="${data.victimName}" style="width: 20px; height: 20px; margin-right: 5px; border-radius: 50%;">
-        <span>${data.victimName}</span>
+        <img src="./resources/character/${data.attackerCharacter}.png" alt="${data.attackerName}" style="width: 40px; height: 40px; margin-right: 10px; border-radius: 50%;">
+        <span style="font-size: 22px;">${data.attackerName}</span>
+        <img src="./resources/knife_icon.png" alt="killed" style="width: 40px; height: 40px; margin: 0 10px;">
+        <img src="./resources/character/${data.victimCharacter}.png" alt="${data.victimName}" style="width: 40px; height: 40px; margin-right: 10px; border-radius: 50%;">
+        <span style="font-size: 22px;">${data.victimName}</span>
     `;
 
     killFeed.appendChild(killMessage);
