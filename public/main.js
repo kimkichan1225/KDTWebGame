@@ -18,9 +18,11 @@ export class GameStage1 {
     this.spawnedWeapons = spawnedWeapons; // Store spawned weapons data
     this.spawnedWeaponObjects = []; // Store actual Weapon instances
 
-    this.Initialize();
-    this.RAF();
-    this.SetupSocketEvents();
+    // Initialize가 완료되면 resolve하는 Promise
+    this.initialized = this.Initialize().then(() => {
+      this.RAF();
+      this.SetupSocketEvents();
+    });
   }
 
   async Initialize() {
@@ -815,7 +817,7 @@ socket.on('updatePlayers', (players, maxPlayers) => {
   }
 });
 
-  socket.on('startGame', (gameInfo) => {
+  socket.on('startGame', async (gameInfo) => {
     waitingRoom.style.display = 'none';
     controls.style.display = 'block';
     document.getElementById('gameUiContainer').style.display = 'block';
@@ -824,9 +826,10 @@ socket.on('updatePlayers', (players, maxPlayers) => {
     countdownOverlay.style.display = 'flex'; // 카운트다운 오버레이 표시
     let count = 3;
     gameStartCountdown.textContent = `잠시 후 게임이 시작됩니다... ${count}`;
-    
-    // GameStage1 인스턴스를 미리 생성하고 입력 비활성화
+
+    // GameStage1 인스턴스를 생성하고 초기화 완료를 기다림
     const gameStage = new GameStage1(socket, gameInfo.players, gameInfo.map, gameInfo.spawnedWeapons);
+    await gameStage.initialized; // 초기화 완료 대기
     gameStage.player_.SetGameInputEnabled(false); // 플레이어 입력 비활성화
 
     const countdownInterval = setInterval(() => {
