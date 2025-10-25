@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>테스트 환경</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      font-family: Arial, sans-serif;
+      background-color: #000;
+    }
+    #container {
+      width: 100%;
+      height: 100vh;
+    }
+    #ui-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 10;
+    }
+    #controls {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      background: rgba(0, 0, 0, 0.7);
+      color: white;
+      padding: 15px;
+      border-radius: 5px;
+      font-size: 14px;
+      pointer-events: auto;
+    }
+    #controls h3 {
+      margin: 0 0 10px 0;
+      font-size: 18px;
+      color: #fffb02;
+    }
+    #controls p {
+      margin: 5px 0;
+    }
+    #weapon-info {
+      position: absolute;
+      bottom: 20px;
+      left: 20px;
+      background: rgba(0, 0, 0, 0.7);
+      color: white;
+      padding: 15px;
+      border-radius: 5px;
+      min-width: 250px;
+    }
+    #weapon-info h4 {
+      margin: 0 0 10px 0;
+      font-size: 16px;
+      color: #fffb02;
+    }
+    #weapon-info p {
+      margin: 5px 0;
+      font-size: 14px;
+    }
+    #hp-bar-container {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      width: 200px;
+      background: rgba(0, 0, 0, 0.7);
+      padding: 10px;
+      border-radius: 5px;
+    }
+    #hp-bar {
+      width: 100%;
+      height: 30px;
+      background: #333;
+      border: 2px solid #fff;
+      border-radius: 5px;
+      overflow: hidden;
+    }
+    #hp-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #ff0000, #ff6b6b);
+      width: 100%;
+      transition: width 0.3s;
+    }
+    #hp-text {
+      text-align: center;
+      color: white;
+      font-size: 14px;
+      font-weight: bold;
+      margin-top: 5px;
+    }
+    #back-button {
+      position: absolute;
+      bottom: 20px;
+      right: 20px;
+      padding: 10px 20px;
+      font-size: 16px;
+      background-color: #d97d3d;
+      border: none;
+      border-radius: 5px;
+      color: white;
+      cursor: pointer;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+      pointer-events: auto;
+    }
+    #back-button:hover {
+      background-color: #b86b34;
+    }
+    .tier-common { color: #ffffff; }
+    .tier-rare { color: #4a9eff; }
+    .tier-epic { color: #a335ee; }
+    .tier-legendary { color: #ff8000; }
+  </style>
+</head>
+<body>
+  <div id="container"></div>
+
+  <div id="ui-overlay">
+    <div id="controls">
+      <h3>조작법</h3>
+      <p><strong>W, A, S, D</strong>: 이동</p>
+      <p><strong>Shift</strong>: 달리기</p>
+      <p><strong>J</strong>: 공격</p>
+      <p><strong>K</strong>: 점프</p>
+      <p><strong>L</strong>: 대쉬</p>
+      <p><strong>E</strong>: 무기 획득</p>
+      <p><strong>Q</strong>: 무기 버리기</p>
+    </div>
+
+    <div id="hp-bar-container">
+      <div id="hp-bar">
+        <div id="hp-fill"></div>
+      </div>
+      <div id="hp-text">HP: 100 / 100</div>
+    </div>
+
+    <div id="weapon-info">
+      <h4>장착 무기</h4>
+      <p id="weapon-name">없음</p>
+      <p id="weapon-damage">데미지: -</p>
+      <p id="weapon-speed">공격 속도: -</p>
+      <p id="weapon-range">사거리: -</p>
+    </div>
+
+    <button id="back-button">메인으로</button>
+  </div>
+
+  <script type="module" src="./test-main.js"></script>
+  <script>
+    document.getElementById('back-button').addEventListener('click', () => {
+      window.location.href = '/';
+    });
+  </script>
+</body>
+</html>

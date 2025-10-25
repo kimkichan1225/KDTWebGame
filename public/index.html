@@ -34,7 +34,7 @@
     margin-bottom: 20px;
     color: #fffb02;
   }
-  #createRoomButton, #joinRoomMainButton, #popupJoinButton, #popupCloseButton {
+  #createRoomButton, #joinRoomMainButton, #testButton, #popupJoinButton, #popupCloseButton {
     padding: 15px 30px;
     font-size: 24px;
     background-color: #d97d3d;
@@ -46,7 +46,7 @@
     box-shadow: 0 4px 8px rgba(0,0,0,0.3);
     margin: 5px; /* Added margin for spacing */
   }
-  #createRoomButton:hover, #joinRoomMainButton:hover, #popupJoinButton:hover, #popupCloseButton:hover {
+  #createRoomButton:hover, #joinRoomMainButton:hover, #testButton:hover, #popupJoinButton:hover, #popupCloseButton:hover {
     background-color: #b86b34;
     transform: scale(1.05);
   }
@@ -723,9 +723,10 @@
 <body>
   <div id="menu">
     <h1>격투 게임</h1>
-    
+
     <button id="createRoomButton">방 생성</button>
     <button id="joinRoomMainButton">방 참가</button>
+    <button id="testButton">테스트</button>
   </div>
 
   <!-- In-game UI Elements -->
@@ -1356,6 +1357,11 @@
 
     // main.js에서 팝업을 열 때 이 함수를 호출하도록 설정
     // 예: document.getElementById('characterNicknamePopup').style.display = 'flex'; initializeCharacterSelection();
+
+    // 테스트 버튼 클릭 이벤트
+    document.getElementById('testButton').addEventListener('click', () => {
+      window.location.href = '/test.html';
+    });
   </script>
 </body>
 </html>

@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git remote set-url:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(git reset:*)",
+      "Read(//c/Users/vxbc5/Desktop/KDT/1번째 프로젝트 게임/kdt-game - 1인칭/public/resources/Ultimate Animated Character Pack - Nov 2019/FBX/**)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
