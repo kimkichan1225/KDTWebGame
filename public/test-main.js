@@ -349,15 +349,14 @@ class TestGame {
   }
 
   async LoadCharacter() {
-    // localStorage에서 선택된 캐릭터 가져오기
-    let characterName = localStorage.getItem('selectedCharacter') || 'Soldier_Male';
-    const gltfPath = `./resources/Ultimate Animated Character Pack - Nov 2019/glTF/${characterName}.gltf`;
+    // Untitled2.glb 캐릭터 사용 (대검 전용)
+    const glbPath = './resources/Ultimate Animated Character Pack - Nov 2019/glTF/Untitled2.glb';
 
     const loader = new GLTFLoader();
 
     return new Promise((resolve, reject) => {
       loader.load(
-        gltfPath,
+        glbPath,
         (gltf) => {
           this.character = gltf.scene;
           this.character.scale.setScalar(1);
@@ -404,7 +403,7 @@ class TestGame {
           // 카메라 초기 위치 설정
           this.UpdateCamera();
 
-          console.log('캐릭터 로드 완료:', characterName);
+          console.log('캐릭터 로드 완료: Untitled2.glb');
           resolve();
         },
         undefined,
@@ -714,8 +713,8 @@ class TestGame {
         }, actualAttackDelay * 1000);
       }
 
-      // SwordSlash 애니메이션 시작 시 무기 회전 초기화
-      if (animationName === 'SwordSlash' && this.equippedWeaponModel) {
+      // SwordSlash 및 GreatSwordSlash 애니메이션 시작 시 무기 회전 초기화
+      if ((animationName === 'SwordSlash' || animationName.includes('GreatSwordSlash')) && this.equippedWeaponModel) {
         const weaponName = this.equippedWeaponModel.userData.weaponName;
         if (/Sword|Axe|Dagger|Hammer/i.test(weaponName)) {
           this.originalWeaponRotation = this.equippedWeaponModel.rotation.clone();
@@ -737,8 +736,8 @@ class TestGame {
           const isRunning = isMoving && this.keys.shift;
           this.SetAnimation(isMoving ? (isRunning ? 'Run' : 'Walk') : 'Idle');
 
-          // SwordSlash 애니메이션 종료 시 무기 회전 복원
-          if (animationName === 'SwordSlash' && this.equippedWeaponModel && this.originalWeaponRotation) {
+          // SwordSlash 및 GreatSwordSlash 애니메이션 종료 시 무기 회전 복원
+          if ((animationName === 'SwordSlash' || animationName.includes('GreatSwordSlash')) && this.equippedWeaponModel && this.originalWeaponRotation) {
             this.equippedWeaponModel.rotation.copy(this.originalWeaponRotation);
             this.originalWeaponRotation = null; // 초기화
           }
@@ -813,6 +812,10 @@ class TestGame {
             const weaponName = this.equippedWeaponModel.userData.weaponName;
             if (/Pistol|Shotgun|SniperRifle|AssaultRifle|Bow/i.test(weaponName)) {
               attackAnimation = 'Shoot_OneHanded';
+            } else if (/Sword_big/i.test(weaponName)) {
+              // 대검은 GreatSwordSlash 애니메이션 (1, 2, 3 중 랜덤)
+              const slashNum = Math.floor(Math.random() * 3) + 1;
+              attackAnimation = `GreatSwordSlash${slashNum}`;
             } else if (/Sword|Axe|Dagger|Hammer/i.test(weaponName)) {
               attackAnimation = 'SwordSlash';
             }
