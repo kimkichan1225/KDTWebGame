@@ -218,6 +218,7 @@ class TestGame {
     this.dummyTargets = []; // 테스트용 더미 타겟들
     this.originalWeaponRotation = null; // 무기 원래 회전 값 저장
     this.onAnimationFinished = null; // 애니메이션 종료 콜백
+    this.currentAttackProjectile = null; // 현재 공격으로 생성된 투사체
 
     this.clock = new THREE.Clock();
 
@@ -426,6 +427,18 @@ class TestGame {
 
     if (!animationName || this.currentAnimationName === animationName) {
       return;
+    }
+
+    // 공격 애니메이션 목록
+    const attackAnimations = ['SwordAttack', 'GreatSwordAttack', 'DaggerAttack', 'DoubleAxeAttack',
+                              'HammerAttack', 'HandAxeAttack', 'Shoot_OneHanded', 'Punch', 'SwordSlash'];
+
+    // 현재 공격 애니메이션이고, 새 애니메이션이 공격 애니메이션이 아니면 투사체 제거
+    const isCurrentAttack = attackAnimations.some(anim => this.currentAnimationName.includes(anim));
+    const isNewAttack = attackAnimations.some(anim => animationName.includes(anim));
+
+    if (isCurrentAttack && !isNewAttack) {
+      this.ClearAttackProjectile();
     }
 
     this.currentAnimationName = animationName;
@@ -646,6 +659,15 @@ class TestGame {
     console.log('무기 버림:', weaponName);
   }
 
+  ClearAttackProjectile() {
+    // 현재 공격으로 생성된 투사체 제거
+    if (this.currentAttackProjectile && !this.currentAttackProjectile.isDestroyed) {
+      this.currentAttackProjectile.destroy();
+      console.log('공격 애니메이션 중단으로 투사체 제거');
+    }
+    this.currentAttackProjectile = null;
+  }
+
   PlayAttackAnimation(animationName) {
     if (this.isAttacking) return; // 이미 공격 중이면 무시
 
@@ -690,7 +712,7 @@ class TestGame {
           attackDirection.applyAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI); // Y축 기준으로 180도 회전
 
           // 모든 무기 타입을 circle(구체)로 통일
-          this.attackSystem.spawnMeleeProjectile({
+          const projectile = this.attackSystem.spawnMeleeProjectile({
             position: attackPosition,
             direction: attackDirection,
             weapon: weapon,
@@ -702,6 +724,9 @@ class TestGame {
               console.log('타겟 히트!', weapon.damage, '데미지');
             }
           });
+
+          // 생성된 투사체 저장
+          this.currentAttackProjectile = projectile;
 
           console.log(`공격 발사! 타입: ${weapon.type}, 데미지: ${weapon.damage}`);
         }, actualAttackDelay * 1000);
@@ -726,6 +751,10 @@ class TestGame {
       this.onAnimationFinished = (e) => {
         if (e.action === action) {
           this.isAttacking = false;
+
+          // 투사체 참조 정리 (이미 자동으로 제거되었거나 타겟에 맞았을 경우)
+          this.currentAttackProjectile = null;
+
           // 공격 애니메이션이 끝나면 Idle 또는 이동 애니메이션으로 전환
           const isMoving = this.keys.forward || this.keys.backward || this.keys.left || this.keys.right;
           const isRunning = isMoving && this.keys.shift;
@@ -773,9 +802,10 @@ class TestGame {
       case 'KeyL': // 대쉬
         if (!this.isOnGround || this.isRolling || this.rollCooldownTimer > 0) break;
 
-        // 공격 중 구르기 시 공격 취소
+        // 공격 중 구르기 시 공격 취소 및 투사체 제거
         if (this.isAttacking) {
           this.isAttacking = false;
+          this.ClearAttackProjectile();
         }
 
         this.isRolling = true;
