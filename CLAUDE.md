@@ -53,7 +53,8 @@ The client is organized into modular ES6 modules:
 - `attackSystem.js`: Handles attack animations and hit detection
 - `hp.js`: HP bar UI rendering and updates
 - `meleeProjectile.js`: Projectile system for ranged weapons
-- `object.js`: Scene object management and GLTF model loading
+- `object.js`: Scene object management and GLTF model loading (default map)
+- `island-object.js`: Scene object management for island map (map2)
 - `math.js`: Utility math functions for game calculations
 
 **Character System**:
@@ -112,7 +113,8 @@ The game world has fixed boundaries at -40 to 40 units on X and Z axes. Players 
 │   ├── attackSystem.js    # Attack animations and hit detection
 │   ├── hp.js              # HP bar UI rendering
 │   ├── meleeProjectile.js # Projectile physics for ranged weapons
-│   ├── object.js          # GLTF model loading and object management
+│   ├── object.js          # GLTF model loading and object management (map1)
+│   ├── island-object.js   # GLTF model loading for map2 (island)
 │   ├── math.js            # Math utility functions
 │   └── resources/
 │       ├── data/
@@ -147,6 +149,22 @@ The game world has fixed boundaries at -40 to 40 units on X and Z axes. Players 
 - Character selection stores filename (without .gltf extension) in localStorage
 - Character preview uses Three.js with OrbitControls for 3D rotation
 - Victory animation plays in character preview if available in GLTF
+
+### Working with Maps
+- The game supports multiple maps: `map1` (default) and `map2` (island)
+- Map selection is done in the room creation UI via thumbnail selection
+- Map-specific object loaders: `object.js` for map1, `island-object.js` for map2
+- The `GameStage1` constructor dynamically imports the correct object module based on `this.map` value
+- Map textures are loaded from `public/resources/` with capitalized map names (e.g., `Map1.png`, `Map2.png`)
+
+### Working with Game Input Controls
+- **Movement**: W/A/S/D keys for directional movement
+- **Jump**: K key (only when not rolling)
+- **Roll**: L key (has 1 second cooldown)
+- **Attack**: J key (triggers weapon-specific attack animation)
+- **Weapon Pickup**: E key (picks up weapon within 2.0 units range)
+- **Scoreboard**: Hold Tab key to display, release to hide
+- Dead players have input disabled until respawn (3 second countdown)
 
 ### Korean Language
 This codebase uses Korean (한글) for UI text, comments, and user-facing strings. When adding new features, maintain Korean for consistency:
