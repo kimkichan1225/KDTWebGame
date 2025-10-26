@@ -350,8 +350,8 @@ class TestGame {
   }
 
   async LoadCharacter() {
-    // BlueSoldier_Female.glb 캐릭터 사용 (대검 전용)
-    const glbPath = './resources/New Character/BlueSoldier_Female.glb';
+    // Cow.glb 캐릭터 사용
+    const glbPath = './resources/New Character/Cow.glb';
 
     const loader = new GLTFLoader();
 
@@ -409,7 +409,7 @@ class TestGame {
           // 카메라 초기 위치 설정
           this.UpdateCamera();
 
-          console.log('캐릭터 로드 완료: BlueSoldier_Female.glb');
+          console.log('캐릭터 로드 완료: Cow.glb');
           resolve();
         },
         undefined,
