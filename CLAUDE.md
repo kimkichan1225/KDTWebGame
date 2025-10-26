@@ -137,6 +137,8 @@ The game world has fixed boundaries at -40 to 40 units on X and Z axes. Players 
 - Server spawns 10 random weapons at game start via `getRandomWeaponName()`
 - Each weapon has a unique UUID for tracking across network
 - Potion items are excluded from random spawns (filtered in `getRandomWeaponName()`)
+- When a weapon is picked up, a new weapon immediately spawns at a random position to maintain 10 weapons on the map
+- Weapon models are loaded from `public/resources/weapon/FBX/` and attached to the player's `FistR` bone
 
 ### Working with Multiplayer Sync
 - Server is authoritative for HP, kills, deaths - never trust client damage calculations directly
@@ -165,6 +167,33 @@ The game world has fixed boundaries at -40 to 40 units on X and Z axes. Players 
 - **Weapon Pickup**: E key (picks up weapon within 2.0 units range)
 - **Scoreboard**: Hold Tab key to display, release to hide
 - Dead players have input disabled until respawn (3 second countdown)
+
+### Working with the Attack System
+- The `AttackSystem` class (in `attackSystem.js`) manages all projectiles and hit detection
+- Attacks spawn `MeleeProjectile` instances with a 0.2-0.4 second delay after animation starts
+- All weapons use circular hit detection (not sector-based), with radius defined in weapon data
+- Melee weapons: instant hit detection at spawn position with defined radius
+- Ranged weapons: projectiles travel at defined speed and check collision each frame
+- Hit detection only applies to remote players (local damage is client-side visual only)
+- Damage is sent to server via `playerDamage` event, server is authoritative for HP updates
+- Players cannot damage themselves, enforced both client-side and server-side
+
+### Working with Collision Detection
+- Players use fixed-size bounding boxes (width: 1.3, height: 3.2, depth: 1.3) defined in `player.js:304-310`
+- Collision detection uses AABB (Axis-Aligned Bounding Box) intersection tests
+- Players can slide along walls when one direction is blocked (X or Z axis tested separately)
+- Players can stand on top of objects if positioned correctly (checked via Y-axis position)
+- Maximum step height is 0.5 units for climbing small obstacles
+- NPC/object collidables are provided by `object.js` or `island-object.js` via `GetCollidables()`
+
+### Working with HP and Death System
+- HP damage flow: Client attack → `playerDamage` event → Server updates HP → `hpUpdate` broadcast → All clients update visuals
+- Death triggers when HP reaches 0, handled differently for bots vs players:
+  - **Bots**: Server handles death, scoreboard update, and schedules respawn (3 seconds)
+  - **Players**: Client emits `playerKilled` event, server updates scoreboard, client shows death overlay with countdown
+- Players respawn at a random position calculated by `getRandomPosition()` which uses raycasting to avoid spawning inside objects
+- `lastHitBy` tracking ensures correct kill attribution even if multiple players attack the same target
+- Dead players have all input disabled and play only the Death animation until respawn
 
 ### Korean Language
 This codebase uses Korean (한글) for UI text, comments, and user-facing strings. When adding new features, maintain Korean for consistency:

@@ -428,16 +428,42 @@ export class GameStage1 {
         break;
       case 74: // J key
         if (this.player_ && this.player_.mesh_) {
-          let attackAnimation = 'SwordSlash'; // 기본값
+          let attackAnimation = 'Punch'; // 기본값 (맨손)
+
           // 무기 종류에 따라 애니메이션 선택
           if (this.player_.currentWeaponModel && this.player_.currentWeaponModel.userData.weaponName) {
             const weaponName = this.player_.currentWeaponModel.userData.weaponName;
+
+            // 원거리 무기
             if (/Pistol|Shotgun|SniperRifle|AssaultRifle|Bow/i.test(weaponName)) {
               attackAnimation = 'Shoot_OneHanded';
-            } else if (/Sword|Axe|Dagger|Hammer/i.test(weaponName)) {
-              attackAnimation = 'SwordSlash';
+            }
+            // 대검
+            else if (/Sword_big/i.test(weaponName)) {
+              attackAnimation = 'GreatSwordAttack';
+            }
+            // 단검
+            else if (/Dagger/i.test(weaponName)) {
+              attackAnimation = 'DaggerAttack';
+            }
+            // 양날도끼
+            else if (/Axe_Double/i.test(weaponName)) {
+              attackAnimation = 'DoubleAxeAttack';
+            }
+            // 한손도끼 (양날도끼보다 먼저 체크하면 안됨)
+            else if (/Axe_small/i.test(weaponName) || /Axe(?!_)/i.test(weaponName)) {
+              attackAnimation = 'HandAxeAttack';
+            }
+            // 망치
+            else if (/Hammer_Double/i.test(weaponName) || /Hammer/i.test(weaponName)) {
+              attackAnimation = 'HammerAttack';
+            }
+            // 일반 검
+            else if (/Sword/i.test(weaponName)) {
+              attackAnimation = 'SwordAttack';
             }
           }
+
           this.player_.PlayAttackAnimation(attackAnimation);
           this.socket.emit('playerAttack', attackAnimation); // 서버에 공격 애니메이션 정보 전송
         }
@@ -568,8 +594,9 @@ function updatePlayers(players, maxPlayers) {
       if (playerInfo) {
         playerSlot.style.border = '2px solid #4CAF50';
         playerSlot.style.backgroundColor = 'rgba(76, 175, 80, 0.3)';
+        const characterName = playerInfo.character.replace('.glb', '').replace('.gltf', '');
         playerSlot.innerHTML = `
-          <img src="./resources/character/${playerInfo.character}.png" alt="${playerInfo.nickname}" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; margin-bottom: 5px;">
+          <img src="./resources/character/${characterName}.png" alt="${playerInfo.nickname}" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; margin-bottom: 5px;">
           <p style="margin: 0;">${playerInfo.nickname}</p>
           <p style="margin: 0; font-size: 12px; color: #eee;">${playerInfo.ready ? '(준비)' : '(대기)'}</p>
         `;
@@ -871,11 +898,14 @@ socket.on('killFeed', (data) => {
     killMessage.style.color = 'white';
     killMessage.style.marginBottom = '5px';
 
+    const attackerCharName = data.attackerCharacter.replace('.glb', '').replace('.gltf', '');
+    const victimCharName = data.victimCharacter.replace('.glb', '').replace('.gltf', '');
+
     killMessage.innerHTML = `
-        <img src="./resources/character/${data.attackerCharacter}.png" alt="${data.attackerName}" style="width: 40px; height: 40px; margin-right: 10px; border-radius: 50%;">
+        <img src="./resources/character/${attackerCharName}.png" alt="${data.attackerName}" style="width: 40px; height: 40px; margin-right: 10px; border-radius: 50%;">
         <span style="font-size: 22px;">${data.attackerName}</span>
         <img src="./resources/knife_icon.png" alt="killed" style="width: 40px; height: 40px; margin: 0 10px;">
-        <img src="./resources/character/${data.victimCharacter}.png" alt="${data.victimName}" style="width: 40px; height: 40px; margin-right: 10px; border-radius: 50%;">
+        <img src="./resources/character/${victimCharName}.png" alt="${data.victimName}" style="width: 40px; height: 40px; margin-right: 10px; border-radius: 50%;">
         <span style="font-size: 22px;">${data.victimName}</span>
     `;
 

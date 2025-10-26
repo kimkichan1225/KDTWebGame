@@ -55,6 +55,7 @@ export const player = (() => {
       this.originalWeaponRotation_ = null; // 무기 원래 회전 값 저장
       this.onAnimationFinished_ = null; // 애니메이션 종료 시 실행될 콜백
       this.attackSystem_ = params.attackSystem; // AttackSystem 인스턴스
+      this.currentAttackProjectile_ = null; // 현재 공격으로 생성된 투사체
 
       this.LoadModel_(params.character);
       if (!params.isRemote) {
@@ -209,9 +210,10 @@ export const player = (() => {
             this.animations_['Roll'] &&
             this.rollCooldownTimer_ <= 0
           ) {
-            // 공격 중 구르기 시 공격 취소
+            // 공격 중 구르기 시 공격 취소 및 투사체 제거
             if (this.isAttacking_) {
               this.isAttacking_ = false;
+              this.ClearAttackProjectile_();
               // 진행 중인 공격 애니메이션의 콜백 제거
               if (this.onAnimationFinished_) {
                 this.mixer_.removeEventListener('finished', this.onAnimationFinished_);
@@ -279,8 +281,8 @@ export const player = (() => {
 
     LoadModel_(characterName = 'Knight_Male') { // 기본값으로 Knight_Male 설정
       const loader = new GLTFLoader();
-      loader.setPath('./resources/Ultimate Animated Character Pack - Nov 2019/glTF/');
-      loader.load(`${characterName}.gltf`, (gltf) => {
+      loader.setPath('./resources/New Character/');
+      loader.load(`${characterName}.glb`, (gltf) => {
         const model = gltf.scene;
         model.scale.setScalar(1);
         model.quaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 2);
@@ -330,21 +332,59 @@ export const player = (() => {
       });
     }
 
+    FindAnimation_(keywords) {
+      const animNames = Object.keys(this.animations_);
+      for (const keyword of keywords) {
+        // 정확한 매칭
+        const found = animNames.find(name => {
+          const parts = name.split('|');
+          const lastPart = parts[parts.length - 1];
+          return lastPart.toLowerCase() === keyword.toLowerCase();
+        });
+        if (found) return found;
+
+        // 부분 매칭
+        const fallback = animNames.find(name =>
+          name.toLowerCase().includes(keyword.toLowerCase())
+        );
+        if (fallback) return fallback;
+      }
+      return null;
+    }
+
     SetAnimation_(name) {
-      if (this.currentAnimationName_ === name) return;
-      if (name === 'Death') { // Death 애니메이션은 항상 재생
-        this.currentAnimationName_ = name;
+      // 공격 애니메이션 목록
+      const attackAnimations = ['SwordAttack', 'GreatSwordAttack', 'DaggerAttack', 'DoubleAxeAttack',
+                                'HammerAttack', 'HandAxeAttack', 'Shoot_OneHanded', 'Punch', 'SwordSlash'];
+
+      // 애니메이션 이름 검색
+      let animationName = this.FindAnimation_([name]);
+      if (!animationName) {
+        animationName = name; // FindAnimation이 실패하면 원래 이름 사용
+      }
+
+      // 현재 공격 애니메이션이고, 새 애니메이션이 공격 애니메이션이 아니면 투사체 제거
+      const isCurrentAttack = attackAnimations.some(anim => this.currentAnimationName_.includes(anim));
+      const isNewAttack = attackAnimations.some(anim => animationName.includes(anim));
+
+      if (isCurrentAttack && !isNewAttack) {
+        this.ClearAttackProjectile_();
+      }
+
+      if (this.currentAnimationName_ === animationName) return;
+      if (animationName === 'Death') { // Death 애니메이션은 항상 재생
+        this.currentAnimationName_ = animationName;
         if (this.currentAction_) {
           this.currentAction_.fadeOut(0.3);
         }
-        const newAction = this.animations_[name];
+        const newAction = this.animations_[animationName];
         if (newAction) {
           this.currentAction_ = newAction;
           this.currentAction_.reset().fadeIn(0.3).play();
           this.currentAction_.setLoop(THREE.LoopOnce);
           this.currentAction_.clampWhenFinished = true;
         } else {
-          
+
           this.currentAction_ = this.animations_['Idle']; // Fallback to Idle
           if (this.currentAction_) {
             this.currentAction_.reset().fadeIn(0.3).play();
@@ -354,14 +394,14 @@ export const player = (() => {
         return;
       }
       if (this.isDead_) return; // 죽은 상태에서는 Death 애니메이션 외 다른 애니메이션 재생 방지
-      if (this.isAttacking_ && name !== 'SwordSlash' && name !== 'Shoot_OneHanded') return; // 공격 중에는 다른 애니메이션 재생 방지
+      if (this.isAttacking_ && !isNewAttack) return; // 공격 중에는 다른 애니메이션 재생 방지
 
-      this.currentAnimationName_ = name;
+      this.currentAnimationName_ = animationName;
       if (this.currentAction_) {
         this.currentAction_.fadeOut(0.3);
       }
 
-      const newAction = this.animations_[name];
+      const newAction = this.animations_[animationName];
       if (newAction) {
         this.currentAction_ = newAction;
         this.currentAction_.reset().fadeIn(0.3).play();
@@ -378,18 +418,30 @@ export const player = (() => {
         } else if (name === 'Death') {
           this.currentAction_.setLoop(THREE.LoopOnce);
           this.currentAction_.clampWhenFinished = true;
+        } else if (name.includes('Attack') || name.includes('Punch') || name.includes('Slash') || name === 'Shoot_OneHanded') {
+          this.currentAction_.setLoop(THREE.LoopOnce);
+          this.currentAction_.clampWhenFinished = true;
+          this.currentAction_.timeScale = 1.5;
         } else {
           this.currentAction_.timeScale = 1.0;
         }
       } else {
-        
-        
+
+
         this.currentAction_ = this.animations_['Idle']; // Fallback to Idle
         if (this.currentAction_) {
           this.currentAction_.reset().fadeIn(0.3).play();
         }
         this.currentAnimationName_ = 'Idle'; // Update current animation name to Idle
       }
+    }
+
+    ClearAttackProjectile_() {
+      // 현재 공격으로 생성된 투사체 제거
+      if (this.currentAttackProjectile_ && !this.currentAttackProjectile_.isDestroyed) {
+        this.currentAttackProjectile_.destroy();
+      }
+      this.currentAttackProjectile_ = null;
     }
 
     SetGameInputEnabled(enabled) {
@@ -523,15 +575,8 @@ export const player = (() => {
             if (!this.isAttacking_) return; // 공격이 취소되었으면 실행하지 않음
 
             let weapon = this.equippedWeaponData_; // 현재 장착된 무기 데이터
-            if (!weapon) { // 무기가 장착되지 않았을 경우 기본 맨손 공격 설정
-              weapon = {
-                name: 'Fist',
-                type: 'melee',
-                damage: 10,
-                radius: 1.5, // Dagger.fbx와 동일한 범위
-                angle: 1.5707963267948966, // Dagger.fbx와 동일한 범위
-              };
-              
+            if (!weapon) { // 무기가 장착되지 않았을 경우 weapon_data.json에서 맨손 데이터 로드
+              weapon = WEAPON_DATA['Fist'];
             }
             const attacker = this; // 공격자 자신
 
@@ -546,46 +591,31 @@ export const player = (() => {
             attackDirection.negate(); // 모델의 Z축이 반대 방향이므로 뒤집음
             attackDirection.applyAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI); // Y축 기준으로 180도 회전
 
-            if (weapon.type === 'melee') {
-              this.attackSystem_.spawnMeleeProjectile({
-                position: attackPosition,
-                direction: attackDirection,
-                weapon: weapon,
-                attacker: attacker,
-                type: 'sector',
-                angle: weapon.angle,
-                radius: weapon.radius,
-                onHit: (target) => {
-                  
-                  if (this.socket_ && target.params_.isRemote) { // 원격 플레이어에게만 데미지 이벤트 전송
-                    
-                    this.socket_.emit('playerDamage', { targetId: target.params_.playerId, damage: weapon.damage, attackerId: this.socket_.id });
-                  }
+            // 모든 무기 타입을 circle(구체)로 통일 (test-main.js와 동일)
+            const projectile = this.attackSystem_.spawnMeleeProjectile({
+              position: attackPosition,
+              direction: attackDirection,
+              weapon: weapon,
+              attacker: attacker,
+              type: 'circle', // 근거리/원거리 모두 구체 사용
+              radius: weapon.radius || weapon.projectileSize,
+              speed: weapon.projectileSpeed,
+              onHit: (target) => {
+
+                if (this.socket_ && target.params_.isRemote) { // 원격 플레이어에게만 데미지 이벤트 전송
+
+                  this.socket_.emit('playerDamage', { targetId: target.params_.playerId, damage: weapon.damage, attackerId: this.socket_.id });
                 }
-              });
-            } else if (weapon.type === 'ranged') {
-              this.attackSystem_.spawnMeleeProjectile({
-                position: attackPosition,
-                direction: attackDirection,
-                weapon: weapon,
-                attacker: attacker,
-                type: 'circle',
-                radius: weapon.projectileSize,
-                speed: weapon.projectileSpeed,
-                onHit: (target) => {
-                  
-                  if (this.socket_ && target.params_.isRemote) { // 원격 플레이어에게만 데미지 이벤트 전송
-                    
-                    this.socket_.emit('playerDamage', { targetId: target.params_.playerId, damage: weapon.damage, attackerId: this.socket_.id });
-                  }
-                }
-              });
-            }
+              }
+            });
+            // 생성된 투사체 저장
+            this.currentAttackProjectile_ = projectile;
           }, actualAttackDelay * 1000);
         }
 
-        // SwordSlash 애니메이션 시작 시 무기 회전 초기화
-        if (animationName === 'SwordSlash' && this.currentWeaponModel) {
+        // 근접 무기 애니메이션 시작 시 무기 회전 초기화
+        const meleeAttacks = ['SwordAttack', 'GreatSwordAttack', 'DaggerAttack', 'DoubleAxeAttack', 'HammerAttack', 'HandAxeAttack', 'SwordSlash'];
+        if (meleeAttacks.some(anim => animationName.includes(anim)) && this.currentWeaponModel) {
           const weaponName = this.currentWeaponModel.userData.weaponName;
           if (/Sword|Axe|Dagger|Hammer/i.test(weaponName)) {
             this.originalWeaponRotation_ = this.currentWeaponModel.rotation.clone();
@@ -602,13 +632,18 @@ export const player = (() => {
         this.onAnimationFinished_ = (e) => {
           if (e.action === action) {
             this.isAttacking_ = false;
+
+            // 투사체 참조 정리 (이미 자동으로 제거되었거나 타겟에 맞았을 경우)
+            this.currentAttackProjectile_ = null;
+
             // 공격 애니메이션이 끝나면 Idle 또는 이동 애니메이션으로 전환
             const isMoving = this.keys_.forward || this.keys_.backward || this.keys_.left || this.keys_.right;
             const isRunning = isMoving && this.keys_.shift;
             this.SetAnimation_(isMoving ? (isRunning ? 'Run' : 'Walk') : 'Idle');
 
-            // SwordSlash 애니메이션 종료 시 무기 회전 복원
-            if (animationName === 'SwordSlash' && this.currentWeaponModel && this.originalWeaponRotation_) {
+            // 근접 무기 애니메이션 종료 시 무기 회전 복원
+            const meleeAttacks = ['SwordAttack', 'GreatSwordAttack', 'DaggerAttack', 'DoubleAxeAttack', 'HammerAttack', 'HandAxeAttack', 'SwordSlash'];
+            if (meleeAttacks.some(anim => animationName.includes(anim)) && this.currentWeaponModel && this.originalWeaponRotation_) {
               this.currentWeaponModel.rotation.copy(this.originalWeaponRotation_);
               this.originalWeaponRotation_ = null; // 초기화
             }
@@ -739,20 +774,23 @@ export const player = (() => {
       const forward = new THREE.Vector3(0, 0, -1);
       const right = new THREE.Vector3(1, 0, 0);
 
-      // 입력에 따른 방향 계산
-      if (this.keys_.forward) velocity.add(forward);
-      if (this.keys_.backward) velocity.sub(forward);
-      if (this.keys_.left) velocity.sub(right);
-      if (this.keys_.right) velocity.add(right);
-      velocity.applyAxisAngle(new THREE.Vector3(0, 1, 0), rotationAngle);
+      // 공격 중에는 이동 및 회전 불가
+      if (!this.isAttacking_) {
+        // 입력에 따른 방향 계산
+        if (this.keys_.forward) velocity.add(forward);
+        if (this.keys_.backward) velocity.sub(forward);
+        if (this.keys_.left) velocity.sub(right);
+        if (this.keys_.right) velocity.add(right);
+        velocity.applyAxisAngle(new THREE.Vector3(0, 1, 0), rotationAngle);
 
-      // 회전 업데이트 (충돌과 무관하게 항상 처리)
-      if (velocity.length() > 0.01) {
-        const angle = Math.atan2(velocity.x, velocity.z);
-        const targetQuaternion = new THREE.Quaternion().setFromAxisAngle(
-          new THREE.Vector3(0, 1, 0), angle
-        );
-        this.mesh_.quaternion.slerp(targetQuaternion, 0.3);
+        // 회전 업데이트 (충돌과 무관하게 항상 처리)
+        if (velocity.length() > 0.01) {
+          const angle = Math.atan2(velocity.x, velocity.z);
+          const targetQuaternion = new THREE.Quaternion().setFromAxisAngle(
+            new THREE.Vector3(0, 1, 0), angle
+          );
+          this.mesh_.quaternion.slerp(targetQuaternion, 0.3);
+        }
       }
 
       if (this.isRolling_) {
@@ -861,8 +899,11 @@ export const player = (() => {
         const isRunning = isMoving && this.keys_.shift;
         const moveSpeed = isRunning ? this.speed_ * 2 : this.speed_;
 
-        velocity.normalize().multiplyScalar(moveSpeed * timeElapsed);
-        newPosition.add(velocity);
+        // 공격 중이 아닐 때만 이동 적용
+        if (!this.isAttacking_) {
+          velocity.normalize().multiplyScalar(moveSpeed * timeElapsed);
+          newPosition.add(velocity);
+        }
 
         // 중력 적용
         this.velocityY_ += this.gravity_ * timeElapsed;
@@ -964,12 +1005,12 @@ export const player = (() => {
           this.isJumping_ = false;
         }
 
-        // 애니메이션 업데이트
+        // 애니메이션 업데이트 (공격 중이 아닐 때만)
         if (this.position_.y > 0 && this.isJumping_) {
           this.SetAnimation_('Jump');
-        } else if (isMoving) {
+        } else if (isMoving && !this.isAttacking_) {
           this.SetAnimation_(isRunning ? 'Run' : 'Walk');
-        } else {
+        } else if (!this.isAttacking_) {
           this.SetAnimation_('Idle');
         }
       }

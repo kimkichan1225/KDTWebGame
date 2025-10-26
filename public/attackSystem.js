@@ -28,9 +28,9 @@ export class AttackSystem {
       weapon,
       attacker,
       onHit,
-      type: 'circle', // 모든 무기를 circle(구체) 타입으로 통일
+      type, // player.js에서 전달한 type 사용
       angle,
-      radius: weapon.radius,
+      radius, // player.js에서 전달한 radius 사용
       speed
     });
     this.projectiles.push(projectile);
