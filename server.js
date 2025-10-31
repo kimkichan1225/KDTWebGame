@@ -466,14 +466,19 @@ io.on('connection', (socket) => {
   });
 
   socket.on('playerKilled', ({ victimId, attackerId }) => {
+    console.log('[킬/데스 서버] playerKilled 이벤트 수신:', { victimId, attackerId, roomId: socket.roomId });
     if (socket.roomId && rooms[socket.roomId]) {
         const room = rooms[socket.roomId];
         const victim = room.players.find(p => p.id === victimId);
 
-        if (!victim) return;
+        if (!victim) {
+            console.log('[킬/데스 서버] 피해자를 찾을 수 없음:', victimId);
+            return;
+        }
 
         // 중복 처리 방지: 이미 킬/데스가 처리되었으면 무시
         if (victim.killProcessed) {
+            console.log('[킬/데스 서버] 이미 처리된 킬:', victimId);
             return;
         }
         victim.killProcessed = true; // 처리 플래그 설정
@@ -500,20 +505,32 @@ io.on('connection', (socket) => {
             }
         }
 
-        io.to(socket.roomId).emit('updateScores', room.players.map(p => ({ id: p.id, nickname: p.nickname, kills: p.kills, deaths: p.deaths })));
+        console.log('[킬/데스 서버] 킬/데스 집계:', { attacker: attackerName, victim: victim.nickname, kills: attacker ? attacker.kills : 0, deaths: victim.deaths });
+        const scoresData = room.players.map(p => ({ id: p.id, nickname: p.nickname, kills: p.kills, deaths: p.deaths }));
+        console.log('[킬/데스 서버] updateScores 전송:', scoresData);
+        io.to(socket.roomId).emit('updateScores', scoresData);
+        console.log('[킬/데스 서버] killFeed 전송:', { attackerName, victimName: victim.nickname });
         io.to(socket.roomId).emit('killFeed', { attackerName: attackerName, victimName: victim.nickname, attackerCharacter: attackerCharacter, victimCharacter: victim.character });
+    } else {
+        console.log('[킬/데스 서버] 방을 찾을 수 없음:', socket.roomId);
     }
   });
 
   socket.on('playerRespawned', ({ playerId }) => {
+    console.log('[킬/데스 서버] playerRespawned 이벤트 수신:', { playerId, roomId: socket.roomId });
     if (socket.roomId && rooms[socket.roomId]) {
         const room = rooms[socket.roomId];
         const player = room.players.find(p => p.id === playerId);
 
         if (player) {
+            console.log('[킬/데스 서버] killProcessed 플래그 초기화:', player.nickname);
             player.killProcessed = false; // 리스폰 시 킬 처리 플래그 초기화
             player.lastHitBy = null; // lastHitBy 초기화
+        } else {
+            console.log('[킬/데스 서버] 플레이어를 찾을 수 없음:', playerId);
         }
+    } else {
+        console.log('[킬/데스 서버] 방을 찾을 수 없음:', socket.roomId);
     }
   });
 
@@ -659,9 +676,13 @@ io.on('connection', (socket) => {
               if (attacker && attacker.id !== targetPlayer.id) {
                 attacker.kills++;
               }
-              io.to(socket.roomId).emit('updateScores', room.players.map(p => ({ id: p.id, nickname: p.nickname, kills: p.kills, deaths: p.deaths })));
+              console.log('[킬/데스 서버] 봇 사망 처리:', { attacker: attacker ? attacker.nickname : 'World', victim: targetPlayer.nickname });
+              const scoresData = room.players.map(p => ({ id: p.id, nickname: p.nickname, kills: p.kills, deaths: p.deaths }));
+              console.log('[킬/데스 서버] updateScores 전송 (봇):', scoresData);
+              io.to(socket.roomId).emit('updateScores', scoresData);
               const attackerName = attacker ? attacker.nickname : 'World';
               const attackerCharacter = attacker ? attacker.character : 'Default';
+              console.log('[킬/데스 서버] killFeed 전송 (봇):', { attackerName, victimName: targetPlayer.nickname });
               io.to(socket.roomId).emit('killFeed', { attackerName, victimName: targetPlayer.nickname, attackerCharacter, victimCharacter: targetPlayer.character });
             }
             scheduleBotRespawn(socket.roomId, targetPlayer, 3000);

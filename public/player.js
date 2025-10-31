@@ -547,6 +547,12 @@ export const player = (() => {
         clearInterval(this.countdownTimer);
         this.countdownTimer = null;
       }
+
+      // 서버에 리스폰 알림 (killProcessed 플래그 초기화용)
+      if (this.socket_ && !this.params_.isRemote) {
+        console.log('[킬/데스] playerRespawned 이벤트 전송 (타이머)');
+        this.socket_.emit('playerRespawned', { playerId: this.socket_.id });
+      }
     }
 
     SetPosition(position) {

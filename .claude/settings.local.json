@@ -7,7 +7,8 @@
       "Bash(git push:*)",
       "Bash(git reset:*)",
       "Read(//c/Users/vxbc5/Desktop/KDT/1번째 프로젝트 게임/kdt-game - 1인칭/public/resources/Ultimate Animated Character Pack - Nov 2019/FBX/**)",
-      "Bash(git checkout:*)"
+      "Bash(git checkout:*)",
+      "Bash(node -p:*)"
     ],
     "deny": [],
     "ask": []

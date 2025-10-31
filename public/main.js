@@ -354,7 +354,9 @@ export class GameStage1 {
         if (data.hp <= 0 && !targetPlayer.isDead_) {
           targetPlayer.isDead_ = true;
           targetPlayer.SetAnimation_('Death');
+          console.log('[킬/데스] 플레이어 사망:', data.playerId, '공격자:', data.attackerId);
           if (data.playerId === this.localPlayerId) { // 로컬 플레이어인 경우에만 사망 UI 및 타이머 트리거
+            console.log('[킬/데스] playerKilled 이벤트 전송:', { victimId: data.playerId, attackerId: data.attackerId });
             this.socket.emit('playerKilled', { victimId: data.playerId, attackerId: data.attackerId });
             targetPlayer.DisableInput_();
             targetPlayer.respawnTimer_ = targetPlayer.respawnDelay_;
@@ -918,6 +920,7 @@ socket.on('updateTimer', (time) => {
 });
 
 socket.on('updateScores', (scores) => {
+    console.log('[킬/데스] updateScores 이벤트 수신:', scores);
     const scoreboardBody = document.querySelector('#scoreboardTable tbody');
     scoreboardBody.innerHTML = '';
     scores.forEach(player => {
@@ -932,6 +935,7 @@ socket.on('updateScores', (scores) => {
 });
 
 socket.on('killFeed', (data) => {
+    console.log('[킬/데스] killFeed 이벤트 수신:', data);
     const killFeed = document.getElementById('killFeed');
     const killMessage = document.createElement('div');
     killMessage.style.display = 'flex';

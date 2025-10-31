@@ -68,6 +68,17 @@ The client is organized into modular ES6 modules:
 - Client-side: `weapon.js` handles weapon rendering, pickup collision detection, and equipping
 - Weapons have various stats: damage, attack speed, range, tier (Common/Rare/Epic/Legendary), and special effects (knockback, stun, bleed, armor shred)
 
+### Module System
+
+**Client-side**: All client code uses ES6 modules loaded from CDN:
+- Three.js (v0.124) and its loaders (GLTFLoader, FBXLoader, OrbitControls) are imported from `jsdelivr.net`
+- All client modules use `export` and `import` syntax
+- Main entry point is `main.js` which imports and coordinates other modules
+
+**Server-side**: Uses CommonJS (`require`/`module.exports`)
+- `weaponUtils.js` is the only shared utility module loaded server-side
+- Server loads weapon data synchronously on startup via `loadWeaponData()`
+
 ### Socket.IO Events
 
 **Room Management**:
@@ -178,6 +189,15 @@ The game world has fixed boundaries at -40 to 40 units on X and Z axes. Players 
 - Damage is sent to server via `playerDamage` event, server is authoritative for HP updates
 - Players cannot damage themselves, enforced both client-side and server-side
 
+### Working with Knockback and Stun System
+- Player class tracks knockback state: `isKnockback_`, `knockbackVelocity_`, `knockbackTimer_`
+- Stun state: `isStunned_`, `stunTimer_` - prevents all input during stun duration
+- `ApplyKnockback(direction, strength, duration)` method applies directional knockback force
+- Knockback is applied when `hpUpdate` event contains `weaponEffects.knockbackStrength` and `knockbackDuration`
+- Stun is applied when `weaponEffects.stunDuration` is present (typically 0.2s for basic attacks)
+- Direction for knockback is calculated from attacker position to victim position (away from attacker)
+- Dead players ignore knockback effects
+
 ### Working with Collision Detection
 - Players use fixed-size bounding boxes (width: 1.3, height: 3.2, depth: 1.3) defined in `player.js:304-310`
 - Collision detection uses AABB (Axis-Aligned Bounding Box) intersection tests
@@ -185,6 +205,9 @@ The game world has fixed boundaries at -40 to 40 units on X and Z axes. Players 
 - Players can stand on top of objects if positioned correctly (checked via Y-axis position)
 - Maximum step height is 0.5 units for climbing small obstacles
 - NPC/object collidables are provided by `object.js` or `island-object.js` via `GetCollidables()`
+- **Bot Collision**: Server-side bot movement uses simplified obstacle maps (`MAP1_OBSTACLES`, `MAP2_OBSTACLES` in `server.js:64-81`)
+- Bots have a 0.65 unit radius for collision and use `canBotMoveTo()` to validate positions before moving
+- When bots collide with obstacles, they attempt a 90-degree rotation alternative path
 
 ### Working with HP and Death System
 - HP damage flow: Client attack → `playerDamage` event → Server updates HP → `hpUpdate` broadcast → All clients update visuals
@@ -194,6 +217,36 @@ The game world has fixed boundaries at -40 to 40 units on X and Z axes. Players 
 - Players respawn at a random position calculated by `getRandomPosition()` which uses raycasting to avoid spawning inside objects
 - `lastHitBy` tracking ensures correct kill attribution even if multiple players attack the same target
 - Dead players have all input disabled and play only the Death animation until respawn
+- **Duplicate Kill Prevention**: `killProcessed` flag prevents double-counting deaths. Reset on respawn via `playerRespawned` event
+- **Weapon Effects on Hit**: `hpUpdate` event includes `weaponEffects` object with knockback, stun, bleed, and armor shred data
+- Bots deal 15 damage with basic knockback (3 strength, 0.2s duration) and 0.2s stun
+
+### Common Gotchas and Debugging Tips
+
+**Bot System Issues**:
+- Bots require `runtime` object initialization with position/rotation tracking
+- Bot intervals start 3 seconds after game start (matching player countdown)
+- Always check `!bot.isBot` guards when handling player-only logic
+
+**Weapon Spawning Issues**:
+- Weapons must be defined in `weapon_data.json` before server can spawn them
+- Weapon UUIDs must match between server and client for pickup synchronization
+- Weapon models scale differently: guns use 0.005, melee weapons use 0.01
+
+**Socket Event Flow**:
+- `socket.to(roomId).emit()` sends to everyone in room EXCEPT sender
+- `io.to(roomId).emit()` sends to everyone in room INCLUDING sender
+- Always verify room existence before emitting events to prevent crashes
+
+**Animation System**:
+- GLTF character files may have different animation names - check available clips in browser console
+- `onAnimationFinished_` callback is used for attack animations to know when to spawn projectiles
+- Remote players animate based on `gameUpdate` events with animation names
+
+**Map Loading**:
+- Map modules are dynamically imported based on `this.map` value in `GameStage1`
+- Map textures require capitalized names: `Map1.png`, `Map2.png`
+- Each map has separate obstacle definitions for bot pathfinding
 
 ### Korean Language
 This codebase uses Korean (한글) for UI text, comments, and user-facing strings. When adding new features, maintain Korean for consistency:
