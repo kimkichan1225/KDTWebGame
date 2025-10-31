@@ -178,6 +178,54 @@
     text-align: center;
     z-index: 50; /* Between menu and game */
     display: none; /* Hidden by default */
+    transform-origin: center center;
+  }
+
+  /* 대기방 화면 크기에 따른 스케일링만 적용 */
+  @media (max-width: 1400px) {
+    #waitingRoom {
+      transform: translate(-50%, -50%) scale(0.9);
+    }
+  }
+  @media (max-width: 1200px) {
+    #waitingRoom {
+      transform: translate(-50%, -50%) scale(0.8);
+    }
+  }
+  @media (max-width: 1000px) {
+    #waitingRoom {
+      transform: translate(-50%, -50%) scale(0.7);
+    }
+  }
+  @media (max-width: 900px) {
+    #waitingRoom {
+      transform: translate(-50%, -50%) scale(0.6);
+    }
+  }
+  @media (max-width: 700px) {
+    #waitingRoom {
+      transform: translate(-50%, -50%) scale(0.5);
+    }
+  }
+  @media (max-width: 600px) {
+    #waitingRoom {
+      transform: translate(-50%, -50%) scale(0.45);
+    }
+  }
+  @media (max-width: 500px) {
+    #waitingRoom {
+      transform: translate(-50%, -50%) scale(0.4);
+    }
+  }
+  @media (max-width: 400px) {
+    #waitingRoom {
+      transform: translate(-50%, -50%) scale(0.35);
+    }
+  }
+  @media (max-width: 350px) {
+    #waitingRoom {
+      transform: translate(-50%, -50%) scale(0.3);
+    }
   }
   .player-slot {
     width: 180px; /* Adjusted width for 4 columns */
@@ -427,52 +475,6 @@
       padding: 5px 10px;
     }
 
-    /* 대기실 반응형 */
-    #waitingRoom {
-      width: 95%;
-      padding: 15px;
-      max-height: 90vh;
-      overflow-y: auto;
-    }
-
-    #waitingRoom h2 {
-      font-size: 24px;
-      margin-bottom: 10px;
-    }
-
-    #waitingRoomIdDisplay {
-      font-size: 20px;
-    }
-
-    #waitingRoomMapDisplay {
-      font-size: 16px;
-    }
-
-    #waitingRoomTimeDisplay {
-      font-size: 16px;
-    }
-
-    #playerSlots {
-      grid-template-columns: repeat(2, 1fr) !important;
-      gap: 10px;
-    }
-
-    .player-slot {
-      width: 100%;
-      height: 150px;
-      font-size: 12px;
-    }
-
-    .player-slot img {
-      width: 60px;
-      height: 60px;
-    }
-
-    #waitingRoomButtonsContainer button {
-      font-size: 14px;
-      padding: 8px 16px;
-      margin: 5px;
-    }
 
     /* 인게임 UI 반응형 */
     #timer {
@@ -553,32 +555,70 @@
     .popup-content {
       padding: 15px;
     }
-
-    #playerSlots {
-      grid-template-columns: 1fr !important;
-    }
-
-    .player-slot {
-      height: 120px;
-    }
   }
   </style>
   <style id="character-popup-styles">
-    /* 메인 레이아웃: 캐릭터 선택창과 미리보기 패널, 더 위로 이동 */
+    /* 메인 레이아웃: 캐릭터 선택창과 미리보기 패널 */
     .main-layout {
       position: absolute;
       left: 50%;
-      top: 50%; /* Moved higher from 60% */
+      top: 50%;
       transform: translate(-50%, -50%);
       display: flex;
       flex-direction: row;
       align-items: flex-start;
       z-index: 2;
       gap: 60px;
-      width: 95vw;
-      max-width: 1500px;
-      min-width: 1000px;
       justify-content: center;
+      transform-origin: center center;
+      width: 1400px; /* 고정 너비 */
+    }
+
+    /* 화면 크기에 따른 스케일링만 적용 */
+    @media (max-width: 1600px) {
+      .main-layout {
+        transform: translate(-50%, -50%) scale(0.9);
+      }
+    }
+    @media (max-width: 1400px) {
+      .main-layout {
+        transform: translate(-50%, -50%) scale(0.8);
+      }
+    }
+    @media (max-width: 1200px) {
+      .main-layout {
+        transform: translate(-50%, -50%) scale(0.7);
+      }
+    }
+    @media (max-width: 1000px) {
+      .main-layout {
+        transform: translate(-50%, -50%) scale(0.6);
+      }
+    }
+    @media (max-width: 900px) {
+      .main-layout {
+        transform: translate(-50%, -50%) scale(0.5);
+      }
+    }
+    @media (max-width: 700px) {
+      .main-layout {
+        transform: translate(-50%, -50%) scale(0.45);
+      }
+    }
+    @media (max-width: 600px) {
+      .main-layout {
+        transform: translate(-50%, -50%) scale(0.4);
+      }
+    }
+    @media (max-width: 500px) {
+      .main-layout {
+        transform: translate(-50%, -50%) scale(0.35);
+      }
+    }
+    @media (max-width: 400px) {
+      .main-layout {
+        transform: translate(-50%, -50%) scale(0.3);
+      }
     }
     /* 캐릭터 선택창 외곽: 금속 텍스처와 네온 테두리 */
     .character-grid-wrapper {
@@ -589,9 +629,6 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      max-height: 85vh;
-      overflow-y: auto;
-      min-width: 620px;
       border: 4px solid;
       border-image: linear-gradient(45deg, #ff2e2e, #00d4ff) 1;
     }
@@ -604,8 +641,6 @@
       padding: 0;
       z-index: 2;
       position: relative;
-      max-height: 90vh;
-      overflow-y: auto;
     }
     /* 개별 캐릭터 카드: 금속적이고 전투적인 스타일 */
     .character {
@@ -674,8 +709,7 @@
     }
     /* 미리보기 패널: 홀로그램 스타일의 전투 준비 영역 */
     .preview-panel {
-      min-width: 520px;
-      max-width: 600px;
+      width: 600px;
       background: linear-gradient(135deg, rgba(20, 20, 20, 0.95), rgba(10, 10, 10, 0.95));
       border-radius: 18px;
       box-shadow: 0 12px 60px rgba(0, 0, 0, 0.7);
@@ -703,8 +737,8 @@
     }
     /* 캔버스: 전체 영역 채움 */
     .preview-image-area canvas {
-      width: 100%;
-      height: 100%;
+      width: 100% !important;
+      height: 100% !important;
     }
     /* 미리보기 캐릭터 이름: 네온 글로우 텍스트 */
     .preview-character-name {
@@ -878,210 +912,6 @@
       transform: scale(1.08);
       box-shadow: 0 0 20px #ff2e2e;
       animation: shake 0.3s;
-    }
-    /* 반응형: 화면 너비 1200px 이하 */
-    @media (max-width: 1200px) {
-      .main-layout {
-        gap: 24px;
-        min-width: 800px;
-      }
-      .character-grid-wrapper { 
-        min-width: 360px;
-        padding: 20px 10px; 
-      }
-      .preview-panel { 
-        min-width: 300px;
-        padding: 24px 10px 20px 10px;
-      }
-      .preview-image-area { 
-        width: 180px;
-        height: 240px;
-      }
-      .preview-character-name {
-        font-size: 1.5rem;
-      }
-      .nickname-input {
-        max-width: 180px;
-        font-size: 1rem;
-      }
-      .enter-btn {
-        min-width: 90px;
-        padding: 10px 20px;
-        font-size: 1.2rem;
-      }
-    }
-    /* 반응형: 화면 너비 900px 이하 */
-    @media (max-width: 900px) {
-      .main-layout {
-        flex-direction: column;
-        align-items: center;
-        min-width: 0;
-        width: 100vw;
-        gap: 24px;
-        top: 55%; /* Moved higher from 65% */
-        left: 50%;
-        transform: translate(-50%, 0);
-      }
-      .character-grid-wrapper {
-        margin-bottom: 20px;
-      }
-      .character-grid {
-        grid-template-columns: repeat(5, 100px);
-      }
-      .character {
-        width: 90px;
-        height: 120px;
-      }
-      .character img {
-        width: 70px;
-        height: 70px;
-      }
-      .character-name {
-        font-size: 1rem;
-      }
-      .preview-panel {
-        min-width: 280px;
-        padding: 20px 8px 16px 8px;
-      }
-      .nickname-input {
-        max-width: 160px;
-      }
-    }
-
-    /* 반응형: 화면 너비 768px 이하 (모바일) */
-    @media (max-width: 768px) {
-      .main-layout {
-        top: 50%;
-        transform: translate(-50%, -50%);
-        gap: 15px;
-        max-height: 95vh;
-        overflow-y: auto;
-        padding: 10px 0;
-      }
-
-      .character-grid-wrapper {
-        min-width: 0;
-        width: 95vw;
-        max-width: 450px;
-        padding: 15px 10px;
-        max-height: 45vh;
-        overflow-y: auto;
-      }
-
-      .character-grid {
-        grid-template-columns: repeat(4, 80px);
-        gap: 12px 15px;
-        max-height: none;
-      }
-
-      .character {
-        width: 80px;
-        height: 110px;
-      }
-
-      .character img {
-        width: 60px;
-        height: 60px;
-        margin-top: 8px;
-        margin-bottom: 6px;
-      }
-
-      .character-name {
-        font-size: 0.85rem;
-        padding: 4px 8px;
-        letter-spacing: 0.8px;
-      }
-
-      .preview-panel {
-        min-width: 0;
-        width: 95vw;
-        max-width: 450px;
-        padding: 15px 12px 12px 12px;
-      }
-
-      .preview-image-area {
-        width: 200px;
-        height: 250px;
-        margin-bottom: 12px;
-      }
-
-      .preview-character-name {
-        font-size: 1.3rem;
-        margin-bottom: 12px;
-      }
-
-      .nickname-label {
-        font-size: 1.1rem;
-        margin-bottom: 6px;
-      }
-
-      .nickname-input {
-        max-width: 100%;
-        width: 90%;
-        font-size: 1rem;
-        padding: 10px 12px;
-        margin-bottom: 10px;
-      }
-
-      .enter-btn {
-        min-width: 100px;
-        padding: 12px 24px;
-        font-size: 1.2rem;
-      }
-    }
-
-    /* 반응형: 화면 너비 480px 이하 (작은 모바일) */
-    @media (max-width: 480px) {
-      .character-grid-wrapper {
-        max-height: 40vh;
-      }
-
-      .character-grid {
-        grid-template-columns: repeat(3, 75px);
-        gap: 10px 12px;
-      }
-
-      .character {
-        width: 75px;
-        height: 105px;
-      }
-
-      .character img {
-        width: 55px;
-        height: 55px;
-      }
-
-      .character-name {
-        font-size: 0.75rem;
-        padding: 3px 6px;
-      }
-
-      .preview-panel {
-        padding: 12px 10px 10px 10px;
-      }
-
-      .preview-image-area {
-        width: 160px;
-        height: 200px;
-      }
-
-      .preview-character-name {
-        font-size: 1.1rem;
-      }
-
-      .nickname-label {
-        font-size: 1rem;
-      }
-
-      .nickname-input {
-        font-size: 0.9rem;
-        padding: 8px 10px;
-      }
-
-      .enter-btn {
-        padding: 10px 20px;
-        font-size: 1.1rem;
-      }
     }
   </style>
   </style>
@@ -1266,47 +1096,10 @@
       height: 100%;
     ">
       <!-- 메인 레이아웃: 캐릭터 선택창과 미리보기 패널을 포함 -->
-      <div class="main-layout" style="
-        position: relative;
-        left: auto;
-        top: auto;
-        transform: none;
-        display: flex;
-        flex-direction: row;
-        align-items: flex-start;
-        z-index: 2;
-        gap: 60px;
-        width: 95vw;
-        max-width: 1500px;
-        min-width: 1000px;
-        justify-content: center;
-      ">
+      <div class="main-layout">
         <!-- 캐릭터 선택창: 여러 캐릭터를 그리드로 표시 -->
-        <div class="character-grid-wrapper" style="
-          background: linear-gradient(135deg, #222222, #111111);
-          border-radius: 18px;
-          box-shadow: 0 12px 60px rgba(0, 0, 0, 0.7), inset 0 0 12px rgba(255, 255, 255, 0.1);
-          padding: 30px 22px;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          max-height: 85vh;
-          overflow-y: auto;
-          min-width: 500px;
-          border: 4px solid;
-          border-image: linear-gradient(45deg, #ff2e2e, #00d4ff) 1;
-        ">
-          <div class="character-grid" style="
-            display: grid;
-            grid-template-columns: repeat(4, 110px);
-            gap: 20px 26px;
-            background: transparent;
-            padding: 0;
-            z-index: 2;
-            position: relative;
-            max-height: 90vh;
-            overflow-y: auto;
-          ">
+        <div class="character-grid-wrapper">
+          <div class="character-grid">
             <!-- 캐릭터 카드: 각 캐릭터의 이미지와 이름, glTF 경로 포함 -->
             <div class="character" data-gltf="./resources/New Character/BlueSoldier_Female.glb"><img src="./resources/character/BlueSoldier_Female.png" alt="용병"><div class="character-name">용병</div></div>
             <div class="character" data-gltf="./resources/New Character/Casual_Male.glb"><img src="./resources/character/Casual_Male.png" alt="학생"><div class="character-name">학생</div></div>
@@ -1337,77 +1130,13 @@
           </div>
         </div>
         <!-- 미리보기 패널: 선택된 캐릭터의 3D 모델과 닉네임 입력 -->
-        <div class="preview-panel" style="
-          min-width: 520px;
-          max-width: 600px;
-          background: linear-gradient(135deg, rgba(20, 20, 20, 0.95), rgba(10, 10, 10, 0.95));
-          border-radius: 18px;
-          box-shadow: 0 12px 60px rgba(0, 0, 0, 0.7);
-          padding: 40px 20px 28px 20px;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          position: relative;
-          z-index: 2;
-          border: 4px solid;
-          border-image: linear-gradient(45deg, #00d4ff, #b300ff) 1;
-        ">
-          <div class="preview-image-area" id="previewImageArea" style="
-            width: 320px;
-            height: 400px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 20px;
-            background: rgba(66, 165, 190, 0.8);
-            border-radius: 14px;
-            box-shadow: 0 6px 25px rgba(168, 26, 26, 0.7), inset 0 0 12px #00d4ff60;
-            overflow: hidden;
-          ">
-            <canvas id="previewCanvas" style="
-              width: 100%;
-              height: 100%;
-            "></canvas>
+        <div class="preview-panel">
+          <div class="preview-image-area" id="previewImageArea">
+            <canvas id="previewCanvas"></canvas>
           </div>
-          <div class="preview-character-name" id="previewCharacterName" style="
-            font-family: 'Orbitron', sans-serif;
-            font-size: 1.8rem;
-            color: #fff;
-            font-weight: 700;
-            margin-bottom: 20px;
-            text-shadow: 0 0 12px #00d4ff, 0 0 25px #00d4ffcc;
-            letter-spacing: 0.06em;
-            text-transform: uppercase;
-          ">캐릭터0</div>
-          <input type="text" class="nickname-input" id="nicknameInput" maxlength="12" placeholder="닉네임을 입력하세요" style="
-            width: 100%;
-            max-width: 280px;
-            font-family: 'Orbitron', sans-serif;
-            font-size: 1.2rem;
-            padding: 12px 16px;
-            border-radius: 8px;
-            border: 2px solid #00d4ff80;
-            background: rgba(0, 0, 0, 0.85);
-            color: #fff;
-            margin-bottom: 12px;
-            outline: none;
-            transition: border 0.2s, box-shadow 0.2s;
-            box-sizing: border-box;
-          ">
+          <div class="preview-character-name" id="previewCharacterName">캐릭터0</div>
+          <input type="text" class="nickname-input" id="nicknameInput" maxlength="12" placeholder="닉네임을 입력하세요">
           <button class="modal-btn enter-btn" id="enterBtn" style="
-            min-width: 120px;
-            padding: 14px 28px;
-            border-radius: 8px;
-            border: none;
-            font-family: 'Bebas Neue', sans-serif;
-            font-size: 1.4rem;
-            cursor: pointer;
-            background: linear-gradient(45deg, #ff2e2e, #b300ff);
-            color: #fff;
-            font-weight: bold;
-            text-transform: uppercase;
-            letter-spacing: 1.2px;
-            transition: background 0.2s, transform 0.2s, box-shadow 0.2s;
             box-shadow: 0 0 20px #ff2e2ecc;
             animation: buttonPulse 2s infinite;
           ">입장</button>
@@ -1484,24 +1213,18 @@
   </div>
 
   <!-- Waiting Room Display -->
-  <div id="waitingRoom" style="display: none; /* initial display */
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background: rgba(0, 0, 0, 0.8); /* Darker background for better contrast */
+  <div id="waitingRoom" style="display: none;
+    background: rgba(0, 0, 0, 0.8);
     color: #fff;
     padding: 30px;
-    border-radius: 15px; /* Slightly more rounded corners */
+    border-radius: 15px;
     text-align: center;
-    z-index: 50;
-    flex-direction: column; /* Stack children vertically */
-    justify-content: space-between; /* Distribute space */
-    align-items: center; /* Center horizontally */
-    width: 80%; /* Adjust width as needed */
-    max-width: 900px; /* Max width for larger screens */
-    min-height: 500px; /* Minimum height */
-    box-shadow: 0 0 30px rgba(0, 255, 255, 0.5); /* Neon glow effect */
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    width: 900px;
+    min-height: 500px;
+    box-shadow: 0 0 30px rgba(0, 255, 255, 0.5);
   ">
     <div class="waiting-room-header" style="width: 100%; margin-bottom: 20px;">
       <h2 id="waitingRoomTitle" style="font-size: 36px; margin-bottom: 10px; color: #00ffff; text-shadow: 0 0 10px #00ffff;"></h2>

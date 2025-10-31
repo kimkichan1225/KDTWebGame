@@ -1296,7 +1296,9 @@ function handleJoystickMove(e) {
   const deltaX = touch.clientX - joystickStartX;
   const deltaY = touch.clientY - joystickStartY;
 
-  const distance = Math.min(35, Math.sqrt(deltaX * deltaX + deltaY * deltaY));
+  const maxDistance = 35;
+  const actualDistance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+  const distance = Math.min(maxDistance, actualDistance);
   const angle = Math.atan2(deltaY, deltaX);
 
   const stickX = Math.cos(angle) * distance;
@@ -1308,10 +1310,15 @@ function handleJoystickMove(e) {
   // 플레이어 이동 입력 시뮬레이션
   if (window.currentGame && window.currentGame.player_) {
     const threshold = 10;
+    const runThreshold = 28; // 조이스틱을 끝까지 당기면 뛰기 (80% 이상)
+
     window.currentGame.player_.keys_.forward = deltaY < -threshold;
     window.currentGame.player_.keys_.backward = deltaY > threshold;
     window.currentGame.player_.keys_.left = deltaX < -threshold;
     window.currentGame.player_.keys_.right = deltaX > threshold;
+
+    // 조이스틱 거리에 따라 shift 키(뛰기) 활성화
+    window.currentGame.player_.keys_.shift = actualDistance > runThreshold;
   }
 }
 
@@ -1328,6 +1335,7 @@ function handleJoystickEnd(e) {
     window.currentGame.player_.keys_.backward = false;
     window.currentGame.player_.keys_.left = false;
     window.currentGame.player_.keys_.right = false;
+    window.currentGame.player_.keys_.shift = false;
   }
 }
 
@@ -1419,10 +1427,13 @@ mobileRollBtn.addEventListener('touchstart', (e) => {
       if (window.currentGame.player_.keys_.left) moveDir.x -= 1;
       if (window.currentGame.player_.keys_.right) moveDir.x += 1;
 
-      if (moveDir.length() > 0) {
+      if (moveDir.lengthSq() === 0) {
+        // 이동 입력이 없으면 캐릭터가 바라보는 방향으로 구르기
+        window.currentGame.player_.mesh_.getWorldDirection(moveDir);
+        moveDir.y = 0;
         moveDir.normalize();
       } else {
-        moveDir.set(0, 0, -1);
+        // 이동 입력이 있으면 카메라 방향을 고려하여 구르기
         moveDir.normalize().applyAxisAngle(new THREE.Vector3(0, 1, 0), window.currentGame.player_.lastRotationAngle_ || 0);
       }
       window.currentGame.player_.rollDirection_.copy(moveDir);
