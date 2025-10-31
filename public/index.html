@@ -726,7 +726,7 @@
 
     <button id="createRoomButton">방 생성</button>
     <button id="joinRoomMainButton">방 참가</button>
-    <button id="testButton">테스트</button>
+    <button id="testButton" style="display: none;">테스트</button>
   </div>
 
   <!-- In-game UI Elements -->
@@ -783,6 +783,28 @@
       </div>
       <button id="popupJoinButton" style="margin-top: 15px;">입장</button>
       <button id="popupCloseButton">닫기</button>
+    </div>
+  </div>
+
+  <!-- Change Map Popup (대기방에서 맵 변경) -->
+  <div id="changeMapPopup" class="popup-overlay" style="display: none;">
+    <div class="popup-content">
+      <h2>맵 선택</h2>
+      <div style="margin-bottom: 20px;">
+        <label>변경할 맵을 선택하세요:</label>
+        <div id="changeMapSelectionContainer" style="display: flex; gap: 20px; justify-content: center; margin-top: 15px;">
+          <div class="map-thumbnail-change" data-map="map1" style="cursor: pointer; border: 3px solid transparent; border-radius: 10px; padding: 10px; transition: all 0.3s;">
+            <img src="./resources/Map1.png" alt="Map 1" style="width: 150px; height: 100px; object-fit: cover; border-radius: 5px;">
+            <p style="margin-top: 5px; text-align: center; font-weight: bold;">도시</p>
+          </div>
+          <div class="map-thumbnail-change" data-map="map2" style="cursor: pointer; border: 3px solid transparent; border-radius: 10px; padding: 10px; transition: all 0.3s;">
+            <img src="./resources/Map3.png" alt="Map 3" style="width: 150px; height: 100px; object-fit: cover; border-radius: 5px;">
+            <p style="margin-top: 5px; text-align: center; font-weight: bold;">섬</p>
+          </div>
+        </div>
+      </div>
+      <button id="changeMapConfirmButton" style="padding: 10px 20px; font-size: 18px; background-color: #4CAF50; border: none; border-radius: 5px; color: white; cursor: pointer; margin-right: 10px;">변경</button>
+      <button id="changeMapCancelButton" style="padding: 10px 20px; font-size: 18px; background-color: #f44336; border: none; border-radius: 5px; color: white; cursor: pointer;">취소</button>
     </div>
   </div>
 
@@ -1125,7 +1147,7 @@
         color: #ccc;
         box-shadow: 0 0 15px rgba(0, 255, 255, 0.7);
       ">
-        <img id="currentMapImage" src="" alt="Current Map" style="width: 100%; height: 100%; object-fit: cover; display: none;">
+        <img id="currentMapImage" src="" alt="Current Map" style="width: 100%; height: 100%; object-fit: cover; display: none; cursor: pointer;">
         <span id="mapPlaceholderText">맵 이미지</span>
       </div>
       <button id="readyButton" style="

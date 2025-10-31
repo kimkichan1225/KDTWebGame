@@ -173,6 +173,8 @@ io.on('connection', (socket) => {
     const roomId = Math.random().toString(36).substring(2, 8);
     const { map, maxPlayers, visibility, roundTime, nickname, character, roomName } = roomSettings;
 
+    console.log('[방 생성 서버] 방 생성됨. ID:', roomId, '맵:', map);
+
     rooms[roomId] = {
       id: roomId,
       players: [{ id: socket.id, ready: false, nickname: nickname, character: character, equippedWeapon: null, isAttacking: false, hp: 100, kills: 0, deaths: 0, runtime: { x: 0, y: 0, z: 0, rotY: 0 } }],
@@ -186,7 +188,8 @@ io.on('connection', (socket) => {
     };
     socket.join(roomId);
     socket.roomId = roomId;
-    
+
+    console.log('[방 생성 서버] room.map 확인:', rooms[roomId].map);
     socket.emit('roomCreated', { id: roomId, name: rooms[roomId].name, map: rooms[roomId].map });
     updateRoomPlayers(roomId);
   });
@@ -270,6 +273,8 @@ io.on('connection', (socket) => {
           room.status = 'playing';
           room.gameState.gameStarted = true;
 
+          console.log('[게임 시작 서버] 방:', socket.roomId, '현재 맵:', room.map);
+
           const spawnedWeapons = [];
           for (let i = 0; i < 10; i++) {
             const weaponName = getRandomWeaponName();
@@ -283,6 +288,7 @@ io.on('connection', (socket) => {
           }
           room.gameState.spawnedWeapons = spawnedWeapons;
 
+          console.log('[게임 시작 서버] startGame 이벤트 전송, 맵:', room.map);
           io.to(socket.roomId).emit('startGame', { players: room.players, map: room.map, spawnedWeapons: spawnedWeapons });
 
           // Start bot simulation after 3s (client countdown)
@@ -582,7 +588,7 @@ io.on('connection', (socket) => {
     if (!roomId || !rooms[roomId]) return;
     const room = rooms[roomId];
     const roomCreator = room.players[0];
-    
+
     if (room.status === 'playing') {
       socket.emit('roomError', '게임이 시작된 후에는 AI를 추가할 수 없습니다.');
       return;
@@ -597,8 +603,42 @@ io.on('connection', (socket) => {
     }
     const bot = makeRandomBot(roomId);
     room.players.push(bot);
-    
+
     updateRoomPlayers(roomId);
+  });
+
+  // 맵 변경 (방장만)
+  socket.on('changeMap', (newMap) => {
+    const roomId = socket.roomId;
+    if (!roomId || !rooms[roomId]) {
+      console.log('[맵 변경 서버] 방을 찾을 수 없음:', roomId);
+      return;
+    }
+    const room = rooms[roomId];
+    const roomCreator = room.players[0];
+
+    console.log('[맵 변경 서버] 요청 받음. 방:', roomId, '기존 맵:', room.map, '새 맵:', newMap);
+
+    if (room.status === 'playing') {
+      socket.emit('roomError', '게임이 시작된 후에는 맵을 변경할 수 없습니다.');
+      return;
+    }
+    if (!roomCreator || roomCreator.id !== socket.id) {
+      socket.emit('roomError', '방장만 맵을 변경할 수 있습니다.');
+      return;
+    }
+
+    // 맵 유효성 검사
+    if (newMap !== 'map1' && newMap !== 'map2') {
+      socket.emit('roomError', '유효하지 않은 맵입니다.');
+      return;
+    }
+
+    room.map = newMap;
+    console.log('[맵 변경 서버] 맵 변경 완료. 방:', roomId, '현재 room.map:', room.map);
+
+    // 모든 플레이어에게 맵 변경 알림
+    io.to(roomId).emit('mapChanged', newMap);
   });
 
   socket.on('weaponPickedUp', (weaponUuid) => {

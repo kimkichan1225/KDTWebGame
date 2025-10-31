@@ -9,12 +9,14 @@ export const object = (() => {
       this.models_ = [];
       this.collidables_ = [];
       this.waterMesh_ = null;
-      this.LoadModels_();
+      this.tileSpawnAreas_ = []; // 스폰 가능한 타일 정보 저장
+      this.loadingPromise_ = this.LoadModels_(); // 로딩 완료 Promise 저장
     }
 
     LoadModels_() {
-      const gltfLoader = new GLTFLoader();
-      const modelsToLoad = [
+      return new Promise((resolve) => {
+        const gltfLoader = new GLTFLoader();
+        const modelsToLoad = [
         {
           type: 'gltf',
           filename: 'square_water.gltf.glb',
@@ -1189,14 +1191,21 @@ boundingBoxSize: { width: 2, height: 1.5, depth: 12 },
         },
       ];
 
-      const loadedModels = {};
+      let loadedCount = 0;
+      const totalModels = modelsToLoad.length;
 
       modelsToLoad.forEach((modelInfo) => {
         const loader = new GLTFLoader();
         loader.setPath(modelInfo.path);
         loader.load(modelInfo.filename, (gltf) => {
           this.OnModelLoaded_(gltf.scene, modelInfo);
+          loadedCount++;
+          if (loadedCount === totalModels) {
+            console.log('[island-object] 모든 모델 로드 완료. 타일 개수:', this.tileSpawnAreas_.length);
+            resolve(); // 모든 모델 로드 완료
+          }
         });
+      });
       });
     }
 
@@ -1225,6 +1234,16 @@ boundingBoxSize: { width: 2, height: 1.5, depth: 12 },
 
       this.scene_.add(model);
       this.models_.push(model);
+
+      // 스폰 가능한 타일 타입인지 확인
+      const spawnableTiles = ['square_sand.gltf.glb', 'square_forest_detail.gltf.glb', 'square_rock.gltf.glb'];
+      if (spawnableTiles.includes(modelInfo.filename) && modelInfo.boundingBoxSize) {
+        this.tileSpawnAreas_.push({
+          position: modelInfo.position.clone(),
+          boundingBoxSize: modelInfo.boundingBoxSize,
+          scale: modelInfo.scale instanceof THREE.Vector3 ? modelInfo.scale.clone() : new THREE.Vector3(modelInfo.scale, modelInfo.scale, modelInfo.scale)
+        });
+      }
 
       if (modelInfo.collidable) {
         if (modelInfo.boundingBoxes) {
@@ -1283,6 +1302,10 @@ boundingBoxSize: { width: 2, height: 1.5, depth: 12 },
 
     GetCollidables() {
       return this.collidables_;
+    }
+
+    GetTileSpawnAreas() {
+      return this.tileSpawnAreas_;
     }
   }
 

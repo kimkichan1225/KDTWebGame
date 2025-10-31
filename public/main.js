@@ -51,21 +51,32 @@ export class GameStage1 {
     this.attackSystem = new AttackSystem(this.scene); // AttackSystem 인스턴스 생성
 
     // 맵에 따라 다른 오브젝트 파일 로드
+    console.log('[GameStage1] 로딩 맵:', this.map);
     const objectModule = this.map === 'map2'
       ? await import('./island-object.js')
       : await import('./object.js');
     this.objectClass = objectModule.object;
+    console.log('[GameStage1] 맵 오브젝트 로드 완료:', this.map);
 
-    this.CreateLocalPlayer();
+    await this.CreateLocalPlayer(); // 플레이어 생성을 기다림
 
-    
+
 
     await loadWeaponData(); // 무기 데이터 로드를 기다립니다.
     for (const weaponData of this.spawnedWeapons) {
       const weapon = spawnWeaponOnMap(this.scene, weaponData.weaponName, weaponData.x, weaponData.y, weaponData.z, weaponData.uuid);
       this.spawnedWeaponObjects.push(weapon);
     }
-    this.mapBounds = { minX: -40, maxX: 40, minZ: -40, maxZ: 40 };
+    // 맵에 따른 데미지 설정
+    if (this.map === 'map2') {
+      // 섬 맵: 경계 없음, y < 2일 때 데미지
+      this.mapBounds = null; // 경계 없음
+      this.fallDamageY = 2; // 이 높이 이하로 떨어지면 데미지
+    } else {
+      // 도시 맵: 경계 밖에서 데미지
+      this.mapBounds = { minX: -40, maxX: 40, minZ: -40, maxZ: 40 };
+      this.fallDamageY = null; // 낙하 데미지 없음
+    }
     this.damageTimer = 0;
     this.damageInterval = 0.5; // 0.5초마다 데미지
     this.damageAmount = 25; // 데미지량
@@ -157,8 +168,37 @@ export class GameStage1 {
     const playerHeight = 3.2; // player.js의 halfHeight * 2
 
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
-      const x = Math.random() * 80 - 40;
-      const z = Math.random() * 80 - 40;
+      let x, z;
+
+      // 맵에 따라 다른 스폰 방식
+      if (this.map === 'map2') {
+        // 섬 맵: 타일 위의 랜덤한 위치
+        const tileSpawnAreas = this.npc_.GetTileSpawnAreas();
+        if (!tileSpawnAreas || tileSpawnAreas.length === 0) {
+          // 타일 정보가 없으면 기본 위치 반환
+          console.warn('[getRandomPosition] 타일 정보 없음, 기본 위치 사용');
+          return new THREE.Vector3(0, 5, 0);
+        }
+
+        // 랜덤한 타일 선택
+        const randomTile = tileSpawnAreas[Math.floor(Math.random() * tileSpawnAreas.length)];
+
+        // 타일의 바운딩박스 범위 계산
+        const halfWidth = randomTile.boundingBoxSize.width / 2;
+        const halfDepth = randomTile.boundingBoxSize.depth / 2;
+
+        // 타일 범위 내에서 랜덤한 위치 생성 (플레이어가 타일 밖으로 나가지 않도록 약간 안쪽으로)
+        const margin = 0.5; // 타일 가장자리에서 떨어진 거리
+        x = randomTile.position.x + (Math.random() * 2 - 1) * (halfWidth - margin);
+        z = randomTile.position.z + (Math.random() * 2 - 1) * (halfDepth - margin);
+      } else {
+        // 도시 맵: 전체 맵
+        const xRange = { min: -40, max: 40 };
+        const zRange = { min: -40, max: 40 };
+        x = Math.random() * (xRange.max - xRange.min) + xRange.min;
+        z = Math.random() * (zRange.max - zRange.min) + zRange.min;
+      }
+
       let y = 0.5; // Default y position
 
       const collidables = this.npc_.GetCollidables();
@@ -203,13 +243,20 @@ export class GameStage1 {
     }
 
     // 최대 시도 횟수를 초과하면 기본 위치 반환 (최후의 수단)
-    
+
     return new THREE.Vector3(0, 0.5, 0);
   }
 
-  CreateLocalPlayer() {
+  async CreateLocalPlayer() {
     const npcPos = new THREE.Vector3(0, 0, -4);
     this.npc_ = new this.objectClass.NPC(this.scene, npcPos);
+
+    // 섬 맵인 경우 타일 로딩이 완료될 때까지 대기
+    if (this.map === 'map2' && this.npc_.loadingPromise_) {
+      console.log('[CreateLocalPlayer] 타일 로딩 대기 중...');
+      await this.npc_.loadingPromise_;
+      console.log('[CreateLocalPlayer] 타일 로딩 완료');
+    }
 
     const localPlayerData = this.playerInfo.find(p => p.id === this.localPlayerId);
 
@@ -222,8 +269,10 @@ export class GameStage1 {
       getRespawnPosition: () => this.getRandomPosition(),
       attackSystem: this.attackSystem, // AttackSystem 인스턴스 전달
       socket: this.socket, // socket 인스턴스 전달
+      map: this.map, // 맵 정보 전달
       onLoad: () => {
         const initialPosition = this.getRandomPosition();
+        console.log('[CreateLocalPlayer] 초기 스폰 위치:', initialPosition);
         this.player_.SetPosition([initialPosition.x, initialPosition.y, initialPosition.z]);
       }
     });
@@ -543,14 +592,28 @@ export class GameStage1 {
         isAttacking: this.player_.isAttacking_ // Add attacking state
       });
 
-      // 맵 경계 체크 및 데미지 적용
+      // 맵에 따른 데미지 로직
       const playerPos = this.player_.mesh_.position;
-      if (
-        playerPos.x < this.mapBounds.minX ||
-        playerPos.x > this.mapBounds.maxX ||
-        playerPos.z < this.mapBounds.minZ ||
-        playerPos.z > this.mapBounds.maxZ
-      ) {
+      let shouldTakeDamage = false;
+
+      if (this.map === 'map2') {
+        // 섬 맵: y < 2일 때 데미지 (물에 빠짐)
+        if (playerPos.y < this.fallDamageY) {
+          shouldTakeDamage = true;
+        }
+      } else {
+        // 도시 맵: 경계 밖에서 데미지
+        if (
+          playerPos.x < this.mapBounds.minX ||
+          playerPos.x > this.mapBounds.maxX ||
+          playerPos.z < this.mapBounds.minZ ||
+          playerPos.z > this.mapBounds.maxZ
+        ) {
+          shouldTakeDamage = true;
+        }
+      }
+
+      if (shouldTakeDamage) {
         this.damageTimer += delta;
         if (this.damageTimer >= this.damageInterval) {
           if (!this.player_.isDead_) { // 플레이어가 죽은 상태가 아닐 때만 데미지 적용
@@ -559,7 +622,7 @@ export class GameStage1 {
           this.damageTimer = 0;
         }
       } else {
-        this.damageTimer = 0; // 맵 안으로 들어오면 타이머 초기화
+        this.damageTimer = 0; // 안전한 구역으로 들어오면 타이머 초기화
       }
 
       // HP UI 업데이트
@@ -608,6 +671,7 @@ const characterNicknamePopup = document.getElementById('characterNicknamePopup')
 let roomSettings = {}; // Global variable to store room creation settings
 let joinRoomId = null; // Global variable to store room ID for joining
 let isRoomCreator = false; // Track if the current client is the room creator
+let currentRoomMap = 'map1'; // 현재 방의 맵을 저장
 
 const mapSelectionContainer = document.getElementById('mapSelectionContainer');
 const mapThumbnails = document.querySelectorAll('.map-thumbnail');
@@ -623,6 +687,13 @@ const playerSlotsContainer = document.getElementById('playerSlotsContainer');
 const waitingRoomTitle = document.getElementById('waitingRoomTitle');
 const currentMapImage = document.getElementById('currentMapImage');
 const mapPlaceholderText = document.getElementById('mapPlaceholderText');
+
+// 맵 변경 팝업 관련
+const changeMapPopup = document.getElementById('changeMapPopup');
+const changeMapConfirmButton = document.getElementById('changeMapConfirmButton');
+const changeMapCancelButton = document.getElementById('changeMapCancelButton');
+const mapThumbnailsChange = document.querySelectorAll('.map-thumbnail-change');
+let selectedMapInPopup = 'map1'; // 팝업에서 선택된 맵
 
 function updatePlayers(players, maxPlayers) {
   playerSlotsContainer.innerHTML = '';
@@ -849,15 +920,25 @@ addAIBotButton.addEventListener('click', () => {
   }, 3000);
 });
 
+// 맵 이름을 이미지 파일명으로 변환하는 함수
+function getMapImageName(mapId) {
+  const mapImageMapping = {
+    'map1': 'Map1',
+    'map2': 'Map3'  // map2는 Map3.png 사용
+  };
+  return mapImageMapping[mapId] || 'Map1';
+}
+
 socket.on('roomCreated', (roomInfo) => {
   waitingRoomIdDisplay.textContent = `ID: ${roomInfo.id}`;
   waitingRoomTitle.textContent = `${roomInfo.name} (ID: ${roomInfo.id})`;
   waitingRoomIdDisplay.style.display = 'none';
-  const capitalizedMapName = roomInfo.map.charAt(0).toUpperCase() + roomInfo.map.slice(1);
-  currentMapImage.src = `./resources/${capitalizedMapName}.png`;
+  const mapImageName = getMapImageName(roomInfo.map);
+  currentMapImage.src = `./resources/${mapImageName}.png`;
   currentMapImage.style.display = 'block';
   mapPlaceholderText.style.display = 'none';
   isRoomCreator = true; // Set to true for the room creator
+  currentRoomMap = roomInfo.map; // 현재 방의 맵 저장
   startGameButton.style.display = 'block'; // Show start game button
   if (addAIBotButton) addAIBotButton.style.display = 'inline-block';
 });
@@ -866,11 +947,12 @@ socket.on('roomJoined', (roomInfo) => {
   waitingRoomIdDisplay.textContent = `ID: ${roomInfo.id}`;
   waitingRoomTitle.textContent = `${roomInfo.name} (ID: ${roomInfo.id})`;
   waitingRoomIdDisplay.style.display = 'none';
-  const capitalizedMapName = roomInfo.map.charAt(0).toUpperCase() + roomInfo.map.slice(1);
-  currentMapImage.src = `./resources/${capitalizedMapName}.png`;
+  const mapImageName = getMapImageName(roomInfo.map);
+  currentMapImage.src = `./resources/${mapImageName}.png`;
   currentMapImage.style.display = 'block';
   mapPlaceholderText.style.display = 'none';
   isRoomCreator = false;
+  currentRoomMap = roomInfo.map; // 현재 방의 맵 저장
   if (addAIBotButton) addAIBotButton.style.display = 'none';
 });
 
@@ -888,6 +970,7 @@ socket.on('updatePlayers', (players, maxPlayers) => {
 });
 
   socket.on('startGame', async (gameInfo) => {
+    console.log('[게임 시작] 맵:', gameInfo.map);
     waitingRoom.style.display = 'none';
     controls.style.display = 'block';
     document.getElementById('gameUiContainer').style.display = 'block';
@@ -1016,4 +1099,91 @@ socket.on('roomError', (message) => {
     addAIBotButton.disabled = false;
     addAIBotButton.textContent = 'AI 생성';
   }
+});
+
+// 맵 클릭으로 팝업 열기 (방장만)
+currentMapImage.addEventListener('click', () => {
+  if (!isRoomCreator) {
+    const toast = document.createElement('div');
+    toast.textContent = '방장만 맵을 변경할 수 있습니다.';
+    toast.style.position = 'fixed';
+    toast.style.top = '20px';
+    toast.style.left = '50%';
+    toast.style.transform = 'translateX(-50%)';
+    toast.style.background = 'rgba(255, 0, 0, 0.8)';
+    toast.style.color = '#fff';
+    toast.style.padding = '10px 16px';
+    toast.style.borderRadius = '8px';
+    toast.style.zIndex = '1000';
+    toast.style.fontSize = '16px';
+    document.body.appendChild(toast);
+    setTimeout(() => {
+      if (toast && toast.parentNode) toast.parentNode.removeChild(toast);
+    }, 2000);
+    return;
+  }
+
+  // 팝업 열기
+  selectedMapInPopup = currentRoomMap; // 현재 맵으로 초기화
+  changeMapPopup.style.display = 'flex';
+
+  // 현재 선택된 맵 하이라이트
+  mapThumbnailsChange.forEach(thumb => {
+    if (thumb.dataset.map === selectedMapInPopup) {
+      thumb.style.border = '3px solid #4CAF50';
+      thumb.style.backgroundColor = 'rgba(76, 175, 80, 0.2)';
+    } else {
+      thumb.style.border = '3px solid transparent';
+      thumb.style.backgroundColor = 'transparent';
+    }
+  });
+});
+
+// 맵 변경 팝업에서 맵 썸네일 클릭
+mapThumbnailsChange.forEach(thumbnail => {
+  thumbnail.addEventListener('click', () => {
+    selectedMapInPopup = thumbnail.dataset.map;
+
+    // 모든 썸네일 스타일 초기화
+    mapThumbnailsChange.forEach(thumb => {
+      thumb.style.border = '3px solid transparent';
+      thumb.style.backgroundColor = 'transparent';
+    });
+
+    // 선택된 썸네일 하이라이트
+    thumbnail.style.border = '3px solid #4CAF50';
+    thumbnail.style.backgroundColor = 'rgba(76, 175, 80, 0.2)';
+  });
+});
+
+// 맵 변경 확인 버튼
+changeMapConfirmButton.addEventListener('click', () => {
+  if (selectedMapInPopup !== currentRoomMap) {
+    currentRoomMap = selectedMapInPopup;
+
+    // 이미지 업데이트
+    const mapImageName = getMapImageName(selectedMapInPopup);
+    currentMapImage.src = `./resources/${mapImageName}.png`;
+
+    // 서버에 맵 변경 알림
+    socket.emit('changeMap', selectedMapInPopup);
+
+    console.log('[맵 변경] 맵이 변경되었습니다:', selectedMapInPopup);
+  }
+
+  // 팝업 닫기
+  changeMapPopup.style.display = 'none';
+});
+
+// 맵 변경 취소 버튼
+changeMapCancelButton.addEventListener('click', () => {
+  changeMapPopup.style.display = 'none';
+});
+
+// 서버로부터 맵 변경 업데이트 받기
+socket.on('mapChanged', (newMap) => {
+  currentRoomMap = newMap;
+  const mapImageName = getMapImageName(newMap);
+  currentMapImage.src = `./resources/${mapImageName}.png`;
+  console.log('[맵 변경] 서버로부터 맵 업데이트:', newMap);
 });
