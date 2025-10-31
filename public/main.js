@@ -1040,8 +1040,12 @@ socket.on('updatePlayers', (players, maxPlayers) => {
 
     // GameStage1 인스턴스를 생성하고 초기화 완료를 기다림
     const gameStage = new GameStage1(socket, gameInfo.players, gameInfo.map, gameInfo.spawnedWeapons);
+    window.currentGame = gameStage; // 모바일 컨트롤에서 접근 가능하도록 전역 변수에 할당
     await gameStage.initialized; // 초기화 완료 대기
     gameStage.player_.SetGameInputEnabled(false); // 플레이어 입력 비활성화
+
+    // 모바일 컨트롤 활성화
+    initializeMobileControls();
 
     const countdownInterval = setInterval(() => {
       count--;
@@ -1245,3 +1249,162 @@ socket.on('mapChanged', (newMap) => {
   currentMapImage.src = `./resources/${mapImageName}.png`;
   console.log('[맵 변경] 서버로부터 맵 업데이트:', newMap);
 });
+
+// ============== Mobile Controls ==============
+
+// 모바일 디바이스 감지
+function isMobileDevice() {
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+         (window.innerWidth <= 768);
+}
+
+// 모바일 컨트롤 초기화
+function initializeMobileControls() {
+  const mobileControls = document.getElementById('mobileControls');
+
+  if (isMobileDevice()) {
+    mobileControls.style.display = 'block';
+    console.log('[모바일] 모바일 컨트롤 활성화');
+  } else {
+    mobileControls.style.display = 'none';
+  }
+}
+
+// 가상 조이스틱 로직
+let joystickActive = false;
+let joystickStartX = 0;
+let joystickStartY = 0;
+
+const leftJoystickContainer = document.getElementById('leftJoystickContainer');
+const leftJoystickStick = document.getElementById('leftJoystickStick');
+
+function handleJoystickStart(e) {
+  e.preventDefault();
+  joystickActive = true;
+
+  const touch = e.touches ? e.touches[0] : e;
+  const rect = leftJoystickContainer.getBoundingClientRect();
+  joystickStartX = rect.left + rect.width / 2;
+  joystickStartY = rect.top + rect.height / 2;
+}
+
+function handleJoystickMove(e) {
+  if (!joystickActive) return;
+  e.preventDefault();
+
+  const touch = e.touches ? e.touches[0] : e;
+  const deltaX = touch.clientX - joystickStartX;
+  const deltaY = touch.clientY - joystickStartY;
+
+  const distance = Math.min(35, Math.sqrt(deltaX * deltaX + deltaY * deltaY));
+  const angle = Math.atan2(deltaY, deltaX);
+
+  const stickX = Math.cos(angle) * distance;
+  const stickY = Math.sin(angle) * distance;
+
+  leftJoystickStick.style.left = `${35 + stickX}px`;
+  leftJoystickStick.style.top = `${35 + stickY}px`;
+
+  // 플레이어 이동 입력 시뮬레이션
+  if (window.currentGame && window.currentGame.player_) {
+    const threshold = 10;
+    window.currentGame.player_.keys_.forward = deltaY < -threshold;
+    window.currentGame.player_.keys_.backward = deltaY > threshold;
+    window.currentGame.player_.keys_.left = deltaX < -threshold;
+    window.currentGame.player_.keys_.right = deltaX > threshold;
+  }
+}
+
+function handleJoystickEnd(e) {
+  e.preventDefault();
+  joystickActive = false;
+
+  leftJoystickStick.style.left = '35px';
+  leftJoystickStick.style.top = '35px';
+
+  // 모든 이동 키 해제
+  if (window.currentGame && window.currentGame.player_) {
+    window.currentGame.player_.keys_.forward = false;
+    window.currentGame.player_.keys_.backward = false;
+    window.currentGame.player_.keys_.left = false;
+    window.currentGame.player_.keys_.right = false;
+  }
+}
+
+// 조이스틱 이벤트 리스너
+leftJoystickContainer.addEventListener('touchstart', handleJoystickStart, { passive: false });
+leftJoystickContainer.addEventListener('touchmove', handleJoystickMove, { passive: false });
+leftJoystickContainer.addEventListener('touchend', handleJoystickEnd, { passive: false });
+
+// 모바일 버튼 이벤트
+const mobileAttackBtn = document.getElementById('mobileAttackBtn');
+const mobileJumpBtn = document.getElementById('mobileJumpBtn');
+const mobileRollBtn = document.getElementById('mobileRollBtn');
+const mobilePickupBtn = document.getElementById('mobilePickupBtn');
+
+mobileAttackBtn.addEventListener('touchstart', (e) => {
+  e.preventDefault();
+  if (window.currentGame && window.currentGame.player_) {
+    window.currentGame.player_.Attack_();
+  }
+});
+
+mobileJumpBtn.addEventListener('touchstart', (e) => {
+  e.preventDefault();
+  if (window.currentGame && window.currentGame.player_) {
+    window.currentGame.player_.Jump_();
+  }
+});
+
+mobileRollBtn.addEventListener('touchstart', (e) => {
+  e.preventDefault();
+  if (window.currentGame && window.currentGame.player_) {
+    window.currentGame.player_.Roll_();
+  }
+});
+
+mobilePickupBtn.addEventListener('touchstart', (e) => {
+  e.preventDefault();
+  // E 키 픽업 로직 (main.js의 keydown 이벤트와 동일한 로직)
+  if (window.currentGame && window.currentGame.player_ && window.currentGame.player_.mesh_) {
+    const playerPosition = window.currentGame.player_.mesh_.position;
+    let pickedUp = false;
+    for (let i = 0; i < window.currentGame.spawnedWeaponObjects.length; i++) {
+      const weapon = window.currentGame.spawnedWeaponObjects[i];
+      if (weapon.model_) {
+        const distance = playerPosition.distanceTo(weapon.model_.position);
+        if (distance < 2.0) {
+          window.currentGame.scene.remove(weapon.model_);
+          window.currentGame.spawnedWeaponObjects.splice(i, 1);
+          socket.emit('weaponPickedUp', weapon.uuid);
+          window.currentGame.player_.EquipWeapon(weapon.weaponName);
+          socket.emit('weaponEquipped', weapon.weaponName);
+          pickedUp = true;
+
+          const newWeaponName = getRandomWeaponName();
+          if (newWeaponName) {
+            const newSpawnPosition = window.currentGame.getRandomWeaponSpawnPosition();
+            const newWeaponUuid = THREE.MathUtils.generateUUID();
+            const newWeapon = spawnWeaponOnMap(window.currentGame.scene, newWeaponName, newSpawnPosition.x, newSpawnPosition.y, newSpawnPosition.z, newWeaponUuid);
+            window.currentGame.spawnedWeaponObjects.push(newWeapon);
+            socket.emit('weaponSpawned', {
+              weaponName: newWeaponName,
+              x: newSpawnPosition.x,
+              y: newSpawnPosition.y,
+              z: newSpawnPosition.z,
+              uuid: newWeaponUuid
+            });
+          }
+          break;
+        }
+      }
+    }
+  }
+});
+
+// 창 크기 변경 시 모바일 컨트롤 재초기화
+window.addEventListener('resize', () => {
+  initializeMobileControls();
+});
+
+console.log('[모바일] Mobile controls initialized');
