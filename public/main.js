@@ -705,6 +705,7 @@ const publicRoomList = document.getElementById('publicRoomList');
 const privateRoomCodeInput = document.getElementById('privateRoomCodeInput');
 const popupJoinButton = document.getElementById('popupJoinButton');
 const popupCloseButton = document.getElementById('popupCloseButton');
+const refreshRoomListButton = document.getElementById('refreshRoomListButton');
 const waitingRoom = document.getElementById('waitingRoom');
 const waitingRoomIdDisplay = document.getElementById('waitingRoomIdDisplay');
 const playerList = document.getElementById('playerList');
@@ -882,6 +883,13 @@ mapThumbnails.forEach(thumbnail => {
 joinRoomMainButton.addEventListener('click', () => {
   joinRoomPopup.style.display = 'flex'; // Show popup
   socket.emit('getPublicRooms'); // Request public rooms
+});
+
+// 새로고침 버튼 클릭 이벤트
+refreshRoomListButton.addEventListener('click', () => {
+  console.log('[방 목록] 새로고침 버튼 클릭');
+  selectedPublicRoomId = null; // 선택 초기화
+  socket.emit('getPublicRooms'); // 공개방 목록 다시 요청
 });
 
 let selectedPublicRoomId = null;

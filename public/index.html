@@ -771,7 +771,10 @@
     <div class="popup-content">
       <h2>방 참가</h2>
       <div id="publicRoomListContainer" style="margin-bottom: 20px;">
-        <h3>공개방 목록</h3>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+          <h3 style="margin: 0;">공개방 목록</h3>
+          <button id="refreshRoomListButton" style="padding: 5px 15px; font-size: 14px; cursor: pointer; background-color: #4CAF50; color: white; border: none; border-radius: 5px;">🔄 새로고침</button>
+        </div>
         <ul id="publicRoomList" style="list-style: none; padding: 0; max-height: 200px; overflow-y: auto; border: 1px solid #eee; border-radius: 5px;">
           <!-- Public rooms will be dynamically loaded here -->
           <li style="padding: 10px; border-bottom: 1px solid #eee; text-align: left;">공개방이 없습니다.</li>
