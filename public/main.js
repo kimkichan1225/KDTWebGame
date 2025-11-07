@@ -1,5 +1,6 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.124/build/three.module.js';
 import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.124/examples/jsm/controls/OrbitControls.js';
+import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.124/examples/jsm/loaders/GLTFLoader.js';
 import { player } from './player.js';
 import { math } from './math.js';
 import { hp } from './hp.js'; // hp.js 임포트
@@ -1108,8 +1109,15 @@ socket.on('killFeed', (data) => {
 });
 
 socket.on('gameEnd', (finalScores) => {
+    console.log('[gameEnd] Received finalScores:', finalScores);
     const gameEndScreen = document.getElementById('gameEndScreen');
     const finalScoreboard = document.getElementById('finalScoreboard');
+
+    // 점수 순으로 정렬 (내림차순)
+    const sortedScores = finalScores.sort((a, b) => b.score - a.score);
+    const winner = sortedScores[0];
+    console.log('[gameEnd] Winner:', winner);
+
     const finalScoreboardTable = document.createElement('table');
     finalScoreboardTable.style.color = 'white';
     finalScoreboardTable.style.width = '400px';
@@ -1117,23 +1125,35 @@ socket.on('gameEnd', (finalScores) => {
     finalScoreboardTable.innerHTML = `
         <thead>
             <tr>
-                <th style="padding: 10px; border-bottom: 1px solid white;">Player</th>
-                <th style="padding: 10px; border-bottom: 1px solid white;">Kills</th>
-                <th style="padding: 10px; border-bottom: 1px solid white;">Deaths</th>
+                <th style="padding: 10px; border-bottom: 1px solid white;">순위</th>
+                <th style="padding: 10px; border-bottom: 1px solid white;">플레이어</th>
+                <th style="padding: 10px; border-bottom: 1px solid white;">점수</th>
             </tr>
         </thead>
         <tbody>
-            ${finalScores.map(player => `
-                <tr>
+            ${sortedScores.map((player, index) => `
+                <tr style="background: ${index === 0 ? 'rgba(255, 215, 0, 0.3)' : 'transparent'};">
+                    <td style="padding: 10px;">${index + 1}</td>
                     <td style="padding: 10px;">${player.nickname}</td>
-                    <td style="padding: 10px;">${player.kills}</td>
-                    <td style="padding: 10px;">${player.deaths}</td>
+                    <td style="padding: 10px; font-weight: bold; color: ${player.score >= 0 ? '#4CAF50' : '#f44336'};">${player.score}</td>
                 </tr>
             `).join('')}
         </tbody>
     `;
     finalScoreboard.innerHTML = '';
     finalScoreboard.appendChild(finalScoreboardTable);
+
+    // 1등 플레이어 표시
+    document.getElementById('winnerName').textContent = winner.nickname;
+
+    // 1등 캐릭터 3D 모델 생성 (character가 있을 때만)
+    if (winner.character) {
+        createWinnerCharacter(winner.character);
+    } else {
+        console.error('[gameEnd] Winner character is undefined:', winner);
+        document.getElementById('winnerCharacterContainer').innerHTML = '<p style="color: white; text-align: center; padding: 50px;">캐릭터 정보를 불러올 수 없습니다.</p>';
+    }
+
     gameEndScreen.style.display = 'flex';
     document.getElementById('backToLobbyButton').addEventListener('click', () => {
         window.location.reload();
@@ -1484,9 +1504,122 @@ mobilePickupBtn.addEventListener('touchstart', (e) => {
   }
 });
 
+// 모바일 스코어보드 버튼 이벤트
+const mobileScoreboardBtn = document.getElementById('mobileScoreboardBtn');
+let isScoreboardVisible = false;
+
+mobileScoreboardBtn.addEventListener('touchstart', (e) => {
+  e.preventDefault();
+  const scoreboard = document.getElementById('scoreboard');
+  if (isScoreboardVisible) {
+    scoreboard.style.display = 'none';
+    isScoreboardVisible = false;
+  } else {
+    scoreboard.style.display = 'block';
+    isScoreboardVisible = true;
+  }
+});
+
+// 스코어보드가 표시된 상태에서 화면 다른 곳을 터치하면 닫기
+document.addEventListener('touchstart', (e) => {
+  const scoreboard = document.getElementById('scoreboard');
+  const mobileScoreboardBtn = document.getElementById('mobileScoreboardBtn');
+
+  // 스코어보드가 보이는 상태이고, 터치한 곳이 스코어보드나 버튼이 아니면 닫기
+  if (isScoreboardVisible &&
+      !scoreboard.contains(e.target) &&
+      !mobileScoreboardBtn.contains(e.target)) {
+    scoreboard.style.display = 'none';
+    isScoreboardVisible = false;
+  }
+});
+
 // 창 크기 변경 시 모바일 컨트롤 재초기화
 window.addEventListener('resize', () => {
   initializeMobileControls();
 });
 
 console.log('[모바일] Mobile controls initialized');
+
+// 1등 캐릭터 표시 함수
+let winnerScene, winnerCamera, winnerRenderer, winnerMixer, winnerAnimationId;
+
+function createWinnerCharacter(characterName) {
+  const container = document.getElementById('winnerCharacterContainer');
+
+  // 기존 컨테이너 내용 초기화
+  container.innerHTML = '';
+
+  // 이전 애니메이션 프레임 취소
+  if (winnerAnimationId) {
+    cancelAnimationFrame(winnerAnimationId);
+  }
+
+  // Three.js 씬 설정
+  winnerScene = new THREE.Scene();
+  winnerCamera = new THREE.PerspectiveCamera(50, 1, 0.1, 1000);
+  winnerCamera.position.set(0, 1.5, 3);
+  winnerCamera.lookAt(0, 1, 0);
+
+  winnerRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  winnerRenderer.setSize(400, 400);
+  winnerRenderer.setClearColor(0x000000, 0);
+  container.appendChild(winnerRenderer.domElement);
+
+  // 조명 추가
+  const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+  winnerScene.add(ambientLight);
+
+  const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+  directionalLight.position.set(5, 10, 5);
+  winnerScene.add(directionalLight);
+
+  const directionalLight2 = new THREE.DirectionalLight(0xffffff, 0.4);
+  directionalLight2.position.set(-5, 5, -5);
+  winnerScene.add(directionalLight2);
+
+  // GLTF 로더로 캐릭터 로드
+  const loader = new GLTFLoader();
+  const characterPath = `resources/Ultimate Animated Character Pack - Nov 2019/glTF/${characterName}.gltf`;
+
+  loader.load(characterPath, (gltf) => {
+    const model = gltf.scene;
+    model.position.set(0, 0, 0);
+    model.scale.set(1, 1, 1);
+    winnerScene.add(model);
+
+    // 애니메이션 믹서 설정
+    winnerMixer = new THREE.AnimationMixer(model);
+
+    // Victory 애니메이션 찾기
+    const victoryClip = gltf.animations.find(clip => clip.name === 'Victory');
+
+    if (victoryClip) {
+      const victoryAction = winnerMixer.clipAction(victoryClip);
+      victoryAction.play();
+    } else {
+      // Victory 애니메이션이 없으면 Idle 재생
+      const idleClip = gltf.animations.find(clip => clip.name === 'Idle');
+      if (idleClip) {
+        const idleAction = winnerMixer.clipAction(idleClip);
+        idleAction.play();
+      }
+    }
+
+    // 애니메이션 루프
+    const clock = new THREE.Clock();
+    function animateWinner() {
+      winnerAnimationId = requestAnimationFrame(animateWinner);
+      const delta = clock.getDelta();
+      if (winnerMixer) winnerMixer.update(delta);
+
+      // 캐릭터 회전
+      model.rotation.y += 0.01;
+
+      winnerRenderer.render(winnerScene, winnerCamera);
+    }
+    animateWinner();
+  }, undefined, (error) => {
+    console.error('Error loading winner character:', error);
+  });
+}

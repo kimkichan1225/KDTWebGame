@@ -540,6 +540,176 @@
     #respawnCountdown {
       font-size: 28px;
     }
+
+    /* 모바일 컨트롤 반응형 */
+    #mobileControls #leftJoystickContainer {
+      bottom: 15px;
+      left: 15px;
+      width: 100px;
+      height: 100px;
+    }
+
+    #mobileControls #leftJoystickBase {
+      width: 100px;
+      height: 100px;
+    }
+
+    #mobileControls #leftJoystick {
+      width: 40px;
+      height: 40px;
+    }
+
+    #mobileControls #actionButtons {
+      bottom: 15px;
+      right: 15px;
+      gap: 10px;
+    }
+
+    #mobileControls #mobileAttackBtn,
+    #mobileControls #mobileJumpBtn,
+    #mobileControls #mobileRollBtn {
+      width: 60px;
+      height: 60px;
+      font-size: 20px;
+    }
+
+    #mobileControls #mobilePickupBtn {
+      bottom: 150px;
+      right: 15px;
+      width: 50px;
+      height: 50px;
+      font-size: 18px;
+    }
+
+    #mobileControls #mobileScoreboardBtn {
+      top: 50px;
+      right: 15px;
+      width: 45px;
+      height: 45px;
+    }
+  }
+
+  /* 세로 모드 (Portrait) 전용 스타일 */
+  @media (max-width: 768px) and (orientation: portrait) {
+    /* 조이스틱 위치 조정 */
+    #mobileControls #leftJoystickContainer {
+      bottom: 10px;
+      left: 10px;
+      width: 90px;
+      height: 90px;
+    }
+
+    #mobileControls #leftJoystickBase {
+      width: 90px;
+      height: 90px;
+    }
+
+    #mobileControls #leftJoystick {
+      width: 35px;
+      height: 35px;
+    }
+
+    /* 액션 버튼들 조정 */
+    #mobileControls #actionButtons {
+      bottom: 10px;
+      right: 10px;
+      gap: 8px;
+    }
+
+    #mobileControls #mobileAttackBtn,
+    #mobileControls #mobileJumpBtn,
+    #mobileControls #mobileRollBtn {
+      width: 55px;
+      height: 55px;
+      font-size: 18px;
+    }
+
+    #mobileControls #mobilePickupBtn {
+      bottom: 130px;
+      right: 10px;
+      width: 45px;
+      height: 45px;
+      font-size: 16px;
+    }
+
+    #mobileControls #mobileScoreboardBtn {
+      top: 10px;
+      right: 10px;
+      width: 40px;
+      height: 40px;
+      font-size: 10px;
+    }
+
+    /* 타이머 위치 조정 */
+    #timer {
+      font-size: 20px;
+      top: 5px;
+    }
+
+    /* 킬 피드 위치 조정 */
+    #killFeed {
+      width: 180px;
+      top: 5px;
+      right: 5px;
+      font-size: 11px;
+    }
+  }
+
+  /* 가로 모드 (Landscape) 전용 스타일 */
+  @media (max-width: 1024px) and (orientation: landscape) {
+    /* 조이스틱 크기 조정 */
+    #mobileControls #leftJoystickContainer {
+      bottom: 15px;
+      left: 15px;
+      width: 110px;
+      height: 110px;
+    }
+
+    #mobileControls #leftJoystickBase {
+      width: 110px;
+      height: 110px;
+    }
+
+    #mobileControls #leftJoystick {
+      width: 45px;
+      height: 45px;
+    }
+
+    /* 액션 버튼들 조정 */
+    #mobileControls #actionButtons {
+      bottom: 15px;
+      right: 15px;
+      gap: 12px;
+    }
+
+    #mobileControls #mobileAttackBtn,
+    #mobileControls #mobileJumpBtn,
+    #mobileControls #mobileRollBtn {
+      width: 65px;
+      height: 65px;
+      font-size: 22px;
+    }
+
+    #mobileControls #mobilePickupBtn {
+      bottom: 160px;
+      right: 15px;
+      width: 55px;
+      height: 55px;
+      font-size: 18px;
+    }
+
+    #mobileControls #mobileScoreboardBtn {
+      top: 15px;
+      right: 15px;
+      width: 48px;
+      height: 48px;
+    }
+
+    /* 스코어보드 크기 조정 */
+    #scoreboard {
+      width: 85%;
+      max-width: 400px;
+    }
   }
 
   /* 초소형 화면 (360px 이하) */
@@ -1051,10 +1221,20 @@
     </div>
 
     <!-- Game End Screen -->
-    <div id="gameEndScreen" style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); justify-content: center; align-items: center; flex-direction: column;">
-      <h2 style="font-size: 48px; color: white;">Game Over</h2>
-      <div id="finalScoreboard"></div>
-      <button id="backToLobbyButton" style="padding: 15px 30px; font-size: 24px; margin-top: 20px;">대기실로 돌아가기</button>
+    <div id="gameEndScreen" style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); justify-content: center; align-items: center; flex-direction: row;">
+      <!-- 왼쪽: 스코어보드 -->
+      <div style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+        <h2 style="font-size: 48px; color: white; margin-bottom: 20px;">Game Over</h2>
+        <div id="finalScoreboard"></div>
+        <button id="backToLobbyButton" style="padding: 15px 30px; font-size: 24px; margin-top: 20px;">대기실로 돌아가기</button>
+      </div>
+
+      <!-- 오른쪽: 1등 플레이어 표시 -->
+      <div id="winnerDisplay" style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px;">
+        <h2 style="font-size: 64px; color: #FFD700; margin-bottom: 20px; text-shadow: 2px 2px 4px rgba(0,0,0,0.8);">🏆 WINNER 🏆</h2>
+        <div id="winnerName" style="font-size: 36px; color: white; margin-bottom: 30px; font-weight: bold;"></div>
+        <div id="winnerCharacterContainer" style="width: 400px; height: 400px; background: rgba(0,0,0,0.3); border-radius: 10px; border: 3px solid #FFD700;"></div>
+      </div>
     </div>
 
     <!-- Mobile Controls -->
@@ -1081,6 +1261,12 @@
 
       <!-- Pickup Button (Center-right) -->
       <button id="mobilePickupBtn" style="position: absolute; bottom: 180px; right: 20px; width: 60px; height: 60px; border-radius: 50%; background: rgba(255, 200, 50, 0.7); border: 3px solid rgba(255, 200, 50, 0.9); color: white; font-size: 20px; font-weight: bold; cursor: pointer; pointer-events: auto;">E</button>
+
+      <!-- Scoreboard Button (Top-right) -->
+      <button id="mobileScoreboardBtn" style="position: absolute; top: 60px; right: 20px; width: 50px; height: 50px; border-radius: 8px; background: rgba(50, 50, 50, 0.8); border: 2px solid rgba(255, 255, 255, 0.6); color: white; font-size: 12px; font-weight: bold; cursor: pointer; pointer-events: auto; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;">
+        <div style="font-size: 16px;">📊</div>
+        <div style="font-size: 10px;">K/D</div>
+      </button>
     </div>
   </div>
 

@@ -947,7 +947,15 @@ io.on('connection', (socket) => {
               io.to(socket.roomId).emit('updateTimer', room.gameState.timer);
             } else {
               clearInterval(gameTimer);
-              io.to(socket.roomId).emit('gameEnd', room.players.map(p => ({ nickname: p.nickname, kills: p.kills, deaths: p.deaths })));
+              const finalScores = room.players.map(p => ({
+                nickname: p.nickname,
+                kills: p.kills,
+                deaths: p.deaths,
+                score: p.kills - p.deaths,
+                character: p.character
+              }));
+              console.log('[gameEnd] Sending final scores:', finalScores);
+              io.to(socket.roomId).emit('gameEnd', finalScores);
               if (room.gameState.botInterval) {
                 clearInterval(room.gameState.botInterval);
                 room.gameState.botInterval = null;
