@@ -381,6 +381,135 @@
     border-color: #d97d3d;
   }
 
+  /* 모바일 컨트롤 기본 스타일 */
+  #mobileControls {
+    display: none;
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 100;
+  }
+
+  #leftJoystickContainer {
+    position: absolute;
+    bottom: 2vh;
+    left: 2vw;
+    width: 15vmin;
+    height: 15vmin;
+    pointer-events: auto;
+  }
+
+  #leftJoystickBase {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.3);
+    border: 3px solid rgba(255, 255, 255, 0.5);
+  }
+
+  #leftJoystickStick {
+    position: absolute;
+    width: 40%;
+    height: 40%;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.7);
+    left: 30%;
+    top: 30%;
+    border: 2px solid rgba(255, 255, 255, 0.9);
+  }
+
+  #actionButtons {
+    position: absolute;
+    bottom: 2vh;
+    right: 2vw;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5vmin;
+    pointer-events: auto;
+  }
+
+  .button-row {
+    display: flex;
+    gap: 1.5vmin;
+  }
+
+  #mobileAttackBtn,
+  #mobileJumpBtn,
+  #mobileRollBtn {
+    width: 9vmin;
+    height: 9vmin;
+    border-radius: 50%;
+    color: white;
+    font-size: 3vmin;
+    font-weight: bold;
+    cursor: pointer;
+    border: 3px solid;
+  }
+
+  #mobileAttackBtn {
+    background: rgba(255, 50, 50, 0.7);
+    border-color: rgba(255, 50, 50, 0.9);
+  }
+
+  #mobileJumpBtn {
+    background: rgba(50, 150, 255, 0.7);
+    border-color: rgba(50, 150, 255, 0.9);
+  }
+
+  #mobileRollBtn {
+    background: rgba(100, 200, 100, 0.7);
+    border-color: rgba(100, 200, 100, 0.9);
+  }
+
+  #mobilePickupBtn {
+    position: absolute;
+    bottom: 22vh;
+    right: 2vw;
+    width: 8vmin;
+    height: 8vmin;
+    border-radius: 50%;
+    background: rgba(255, 200, 50, 0.7);
+    border: 3px solid rgba(255, 200, 50, 0.9);
+    color: white;
+    font-size: 3vmin;
+    font-weight: bold;
+    cursor: pointer;
+    pointer-events: auto;
+  }
+
+  #mobileScoreboardBtn {
+    position: absolute;
+    top: 8vh;
+    right: 2vw;
+    width: 8vmin;
+    height: 8vmin;
+    border-radius: 8px;
+    background: rgba(50, 50, 50, 0.8);
+    border: 2px solid rgba(255, 255, 255, 0.6);
+    color: white;
+    font-size: 2vmin;
+    font-weight: bold;
+    cursor: pointer;
+    pointer-events: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5vmin;
+  }
+
+  .scoreboard-icon {
+    font-size: 2.5vmin;
+  }
+
+  .scoreboard-text {
+    font-size: 1.5vmin;
+  }
+
   /* 반응형 디자인: 모바일 및 작은 화면 대응 */
   @media (max-width: 768px) {
     /* 메인 메뉴 반응형 */
@@ -541,103 +670,59 @@
       font-size: 28px;
     }
 
-    /* 모바일 컨트롤 반응형 */
-    #mobileControls #leftJoystickContainer {
-      bottom: 15px;
-      left: 15px;
-      width: 100px;
-      height: 100px;
-    }
-
-    #mobileControls #leftJoystickBase {
-      width: 100px;
-      height: 100px;
-    }
-
-    #mobileControls #leftJoystick {
-      width: 40px;
-      height: 40px;
-    }
-
-    #mobileControls #actionButtons {
-      bottom: 15px;
-      right: 15px;
-      gap: 10px;
-    }
-
-    #mobileControls #mobileAttackBtn,
-    #mobileControls #mobileJumpBtn,
-    #mobileControls #mobileRollBtn {
-      width: 60px;
-      height: 60px;
-      font-size: 20px;
-    }
-
-    #mobileControls #mobilePickupBtn {
-      bottom: 150px;
-      right: 15px;
-      width: 50px;
-      height: 50px;
-      font-size: 18px;
-    }
-
-    #mobileControls #mobileScoreboardBtn {
-      top: 50px;
-      right: 15px;
-      width: 45px;
-      height: 45px;
-    }
+    /* 모바일 컨트롤은 이미 뷰포트 단위로 반응형 처리됨 */
   }
 
-  /* 세로 모드 (Portrait) 전용 스타일 */
+  /* 세로 모드 (Portrait) 전용 스타일 - 최적화된 배치 */
   @media (max-width: 768px) and (orientation: portrait) {
-    /* 조이스틱 위치 조정 */
-    #mobileControls #leftJoystickContainer {
-      bottom: 10px;
-      left: 10px;
-      width: 90px;
-      height: 90px;
+    /* 조이스틱: 왼쪽 하단 유지, 크기 키움 */
+    #leftJoystickContainer {
+      width: 20vmin;
+      height: 20vmin;
+      bottom: 3vh;
+      left: 3vw;
     }
 
-    #mobileControls #leftJoystickBase {
-      width: 90px;
-      height: 90px;
+    /* 액션 버튼들: 오른쪽 하단, 크기 키움 */
+    #actionButtons {
+      bottom: 3vh;
+      right: 3vw;
+      gap: 2vmin;
     }
 
-    #mobileControls #leftJoystick {
-      width: 35px;
-      height: 35px;
+    #mobileAttackBtn,
+    #mobileJumpBtn,
+    #mobileRollBtn {
+      width: 13vmin;
+      height: 13vmin;
+      font-size: 4vmin;
     }
 
-    /* 액션 버튼들 조정 */
-    #mobileControls #actionButtons {
-      bottom: 10px;
-      right: 10px;
-      gap: 8px;
+    /* 픽업 버튼: 화면 중앙 오른쪽으로 이동 (엄지로 쉽게 닿도록) */
+    #mobilePickupBtn {
+      bottom: 50vh;
+      transform: translateY(50%);
+      right: 3vw;
+      width: 11vmin;
+      height: 11vmin;
+      font-size: 3.5vmin;
     }
 
-    #mobileControls #mobileAttackBtn,
-    #mobileControls #mobileJumpBtn,
-    #mobileControls #mobileRollBtn {
-      width: 55px;
-      height: 55px;
-      font-size: 18px;
+    /* 스코어보드 버튼: 왼쪽 상단으로 이동 */
+    #mobileScoreboardBtn {
+      top: 3vh;
+      left: 3vw;
+      right: auto;
+      width: 11vmin;
+      height: 11vmin;
     }
 
-    #mobileControls #mobilePickupBtn {
-      bottom: 130px;
-      right: 10px;
-      width: 45px;
-      height: 45px;
-      font-size: 16px;
+    .scoreboard-icon {
+      font-size: 3.5vmin;
     }
 
-    #mobileControls #mobileScoreboardBtn {
-      top: 10px;
-      right: 10px;
-      width: 40px;
-      height: 40px;
-      font-size: 10px;
+    .scoreboard-text {
+      font-size: 2vmin;
     }
 
     /* 타이머 위치 조정 */
@@ -657,52 +742,29 @@
 
   /* 가로 모드 (Landscape) 전용 스타일 */
   @media (max-width: 1024px) and (orientation: landscape) {
-    /* 조이스틱 크기 조정 */
-    #mobileControls #leftJoystickContainer {
-      bottom: 15px;
-      left: 15px;
-      width: 110px;
-      height: 110px;
+    /* 조이스틱 크기 조정 (가로 모드에서 좀 더 작게) */
+    #leftJoystickContainer {
+      width: 12vmin;
+      height: 12vmin;
     }
 
-    #mobileControls #leftJoystickBase {
-      width: 110px;
-      height: 110px;
+    #mobileAttackBtn,
+    #mobileJumpBtn,
+    #mobileRollBtn {
+      width: 8vmin;
+      height: 8vmin;
+      font-size: 2.8vmin;
     }
 
-    #mobileControls #leftJoystick {
-      width: 45px;
-      height: 45px;
+    #mobilePickupBtn {
+      width: 7vmin;
+      height: 7vmin;
+      font-size: 2.8vmin;
     }
 
-    /* 액션 버튼들 조정 */
-    #mobileControls #actionButtons {
-      bottom: 15px;
-      right: 15px;
-      gap: 12px;
-    }
-
-    #mobileControls #mobileAttackBtn,
-    #mobileControls #mobileJumpBtn,
-    #mobileControls #mobileRollBtn {
-      width: 65px;
-      height: 65px;
-      font-size: 22px;
-    }
-
-    #mobileControls #mobilePickupBtn {
-      bottom: 160px;
-      right: 15px;
-      width: 55px;
-      height: 55px;
-      font-size: 18px;
-    }
-
-    #mobileControls #mobileScoreboardBtn {
-      top: 15px;
-      right: 15px;
-      width: 48px;
-      height: 48px;
+    #mobileScoreboardBtn {
+      width: 7vmin;
+      height: 7vmin;
     }
 
     /* 스코어보드 크기 조정 */
@@ -1238,34 +1300,34 @@
     </div>
 
     <!-- Mobile Controls -->
-    <div id="mobileControls" style="display: none; position: absolute; bottom: 0; left: 0; width: 100%; height: 100%; pointer-events: none;">
+    <div id="mobileControls">
       <!-- Left Joystick (Movement) -->
-      <div id="leftJoystickContainer" style="position: absolute; bottom: 20px; left: 20px; width: 120px; height: 120px; pointer-events: auto;">
-        <div id="leftJoystickBase" style="position: absolute; width: 120px; height: 120px; border-radius: 50%; background: rgba(255, 255, 255, 0.3); border: 3px solid rgba(255, 255, 255, 0.5);"></div>
-        <div id="leftJoystickStick" style="position: absolute; width: 50px; height: 50px; border-radius: 50%; background: rgba(255, 255, 255, 0.7); left: 35px; top: 35px; border: 2px solid rgba(255, 255, 255, 0.9);"></div>
+      <div id="leftJoystickContainer">
+        <div id="leftJoystickBase"></div>
+        <div id="leftJoystickStick"></div>
       </div>
 
       <!-- Action Buttons (Right side) -->
-      <div id="actionButtons" style="position: absolute; bottom: 20px; right: 20px; display: flex; flex-direction: column; gap: 15px; pointer-events: auto;">
+      <div id="actionButtons">
         <!-- Attack Button -->
-        <button id="mobileAttackBtn" style="width: 70px; height: 70px; border-radius: 50%; background: rgba(255, 50, 50, 0.7); border: 3px solid rgba(255, 50, 50, 0.9); color: white; font-size: 24px; font-weight: bold; cursor: pointer;">J</button>
+        <button id="mobileAttackBtn">J</button>
 
-        <div style="display: flex; gap: 15px;">
+        <div class="button-row">
           <!-- Jump Button -->
-          <button id="mobileJumpBtn" style="width: 70px; height: 70px; border-radius: 50%; background: rgba(50, 150, 255, 0.7); border: 3px solid rgba(50, 150, 255, 0.9); color: white; font-size: 24px; font-weight: bold; cursor: pointer;">K</button>
+          <button id="mobileJumpBtn">K</button>
 
           <!-- Roll Button -->
-          <button id="mobileRollBtn" style="width: 70px; height: 70px; border-radius: 50%; background: rgba(100, 200, 100, 0.7); border: 3px solid rgba(100, 200, 100, 0.9); color: white; font-size: 24px; font-weight: bold; cursor: pointer;">L</button>
+          <button id="mobileRollBtn">L</button>
         </div>
       </div>
 
       <!-- Pickup Button (Center-right) -->
-      <button id="mobilePickupBtn" style="position: absolute; bottom: 180px; right: 20px; width: 60px; height: 60px; border-radius: 50%; background: rgba(255, 200, 50, 0.7); border: 3px solid rgba(255, 200, 50, 0.9); color: white; font-size: 20px; font-weight: bold; cursor: pointer; pointer-events: auto;">E</button>
+      <button id="mobilePickupBtn">E</button>
 
       <!-- Scoreboard Button (Top-right) -->
-      <button id="mobileScoreboardBtn" style="position: absolute; top: 60px; right: 20px; width: 50px; height: 50px; border-radius: 8px; background: rgba(50, 50, 50, 0.8); border: 2px solid rgba(255, 255, 255, 0.6); color: white; font-size: 12px; font-weight: bold; cursor: pointer; pointer-events: auto; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;">
-        <div style="font-size: 16px;">📊</div>
-        <div style="font-size: 10px;">K/D</div>
+      <button id="mobileScoreboardBtn">
+        <div class="scoreboard-icon">📊</div>
+        <div class="scoreboard-text">K/D</div>
       </button>
     </div>
   </div>
